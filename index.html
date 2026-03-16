@@ -966,46 +966,39 @@
     jbSet(BIN_REVIEWS, r).catch(e => console.error('saveReviews:', e));
   }
   async function loadAllDrivers() {
-    // Selalu load SEMUA data driver dari server, simpan penuh ke cache
-    if (cacheValid('drivers')) return _cache.drivers;
+    // TIDAK pakai cache - selalu fetch langsung dari server
+    // supaya tidak ada masalah stale data antar server
     try {
       const data = await jbGet(BIN_DRIVERS);
-      // Pastikan formatnya object dengan key Mandalika dan Nexotis
-      let normalized;
       if (!data || Array.isArray(data) || typeof data !== 'object') {
-        normalized = { Mandalika: [], Nexotis: [] };
-      } else {
-        normalized = {
-          Mandalika: Array.isArray(data.Mandalika) ? data.Mandalika : [],
-          Nexotis:   Array.isArray(data.Nexotis)   ? data.Nexotis   : []
-        };
+        return { Mandalika: [], Nexotis: [] };
       }
-      setCache('drivers', normalized);
-      // Kalau format lama, perbaiki di server sekalian
-      if (!data || Array.isArray(data)) {
-        await jbSet(BIN_DRIVERS, normalized);
-      }
+      return {
+        Mandalika: Array.isArray(data.Mandalika) ? data.Mandalika : [],
+        Nexotis:   Array.isArray(data.Nexotis)   ? data.Nexotis   : []
+      };
     } catch(e) {
       console.error('loadAllDrivers error:', e);
-      if (!_cache.drivers) setCache('drivers', { Mandalika: [], Nexotis: [] });
+      return { Mandalika: [], Nexotis: [] };
     }
-    return _cache.drivers;
   }
   async function loadDrivers(server) {
     const all = await loadAllDrivers();
-    return Array.isArray(all[server]) ? [...all[server]] : [];
+    // Update cache dengan data terbaru
+    setCache('drivers', all);
+    return Array.isArray(all[server]) ? all[server] : [];
   }
   async function saveDrivers(server, newList) {
-    // Selalu fetch fresh dari server dulu supaya tidak kehilangan data server lain
-    invalidateCache('drivers');
+    // Fetch fresh dari server, update server yang diminta saja
     const all = await loadAllDrivers();
-    // Update hanya server yang diminta, jangan sentuh server lain
     const updated = {
-      Mandalika: Array.isArray(all.Mandalika) ? [...all.Mandalika] : [],
-      Nexotis:   Array.isArray(all.Nexotis)   ? [...all.Nexotis]   : []
+      Mandalika: Array.isArray(all.Mandalika) ? all.Mandalika : [],
+      Nexotis:   Array.isArray(all.Nexotis)   ? all.Nexotis   : []
     };
     updated[server] = newList;
+    // Update cache
     setCache('drivers', updated);
+    // Simpan ke server
     try {
       await jbSet(BIN_DRIVERS, updated);
     } catch(e) {
@@ -1013,10 +1006,6 @@
       showToast('❌ Gagal menyimpan driver, coba lagi!', '#e74c3c');
       invalidateCache('drivers');
     }
-  }
-  function _normalizeLocks(data) {
-    if (!data || Array.isArray(data) || typeof data !== 'object') return { mk: false, nx: false };
-    return { mk: !!data.mk, nx: !!data.nx };
   }
   async function loadLocks() {
     if (cacheValid('locks')) return _cache.locks;
@@ -1396,13 +1385,11 @@
     const inputId = 'input-new-driver-' + tab;
     const val     = document.getElementById(inputId).value.trim();
     if (!val) return showToast('⚠️ Nama driver wajib diisi!', '#e74c3c');
-    // loadDrivers akan fetch fresh karena saveDrivers selalu invalidate cache
     const drivers = await loadDrivers(server);
     if (drivers.includes(val)) return showToast('⚠️ Nama driver sudah ada!', '#e74c3c');
-    const newList = [...drivers, val];
-    document.getElementById(inputId).value = '';
     showToast('⏳ Menyimpan driver...', '#1d6fa4');
-    await saveDrivers(server, newList);
+    await saveDrivers(server, [...drivers, val]);
+    document.getElementById(inputId).value = '';
     await refreshAllDropdowns();
     await renderDriverListAdmin(tab);
     updateStats(null);
@@ -1412,15 +1399,13 @@
   async function removeDriver(tab, idx) {
     const server  = tab === 'mk' ? 'Mandalika' : 'Nexotis';
     const drivers = await loadDrivers(server);
-    const newList = drivers.filter((_, i) => i !== idx);
     showToast('⏳ Menghapus driver...', '#1d6fa4');
-    await saveDrivers(server, newList);
+    await saveDrivers(server, drivers.filter((_, i) => i !== idx));
     await refreshAllDropdowns();
     await renderDriverListAdmin(tab);
     updateStats(null);
     showToast('🗑️ Driver berhasil dihapus!');
   }
-
   async function renderDriverListAdmin(tab) {
     const server    = tab === 'mk' ? 'Mandalika' : 'Nexotis';
     const drivers   = await loadDrivers(server);
