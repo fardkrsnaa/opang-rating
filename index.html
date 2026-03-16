@@ -914,11 +914,57 @@
   const STAR_LABELS = ['','Sangat Buruk 😤','Kurang Memuaskan 😕','Lumayan 😐','Bagus! 😊','Luar Biasa! 🔥'];
   const panelStars  = { mk: 0, nx: 0 };
 
-  // ── STORAGE ──
-  function loadReviews()       { try { return JSON.parse(localStorage.getItem('opang_reviews')||'[]'); } catch { return []; } }
-  function saveReviews(r)      { localStorage.setItem('opang_reviews', JSON.stringify(r)); }
-  function loadDrivers(server) { try { return JSON.parse(localStorage.getItem('opang_drivers_'+server)||'[]'); } catch { return []; } }
-  function saveDrivers(server,d){ localStorage.setItem('opang_drivers_'+server, JSON.stringify(d)); }
+  // ── JSONBIN CONFIG ──
+  const JB_KEY        = '$2a$10$z2II/YHw8ss73eRXGKrD6.xPjQE18qMj1Xllx82h2BvNo9grtmPPK';
+  const BIN_REVIEWS   = '69b863c7b7ec241ddc74578d';
+  const BIN_DRIVERS   = '69b86432aa77b81da9ee2d89';
+  const BIN_LOCKS     = '69b8646cb7ec241ddc7459a3';
+  const JB_BASE       = 'https://api.jsonbin.io/v3/b';
+  const JB_HEADERS    = { 'Content-Type': 'application/json', 'X-Master-Key': JB_KEY };
+
+  // Local cache to avoid excessive API calls
+  let _cache = { reviews: null, drivers: null, locks: null };
+
+  async function jbGet(binId) {
+    const res  = await fetch(`${JB_BASE}/${binId}/latest`, { headers: { 'X-Master-Key': JB_KEY } });
+    const data = await res.json();
+    return data.record;
+  }
+  async function jbSet(binId, value) {
+    await fetch(`${JB_BASE}/${binId}`, {
+      method: 'PUT',
+      headers: JB_HEADERS,
+      body: JSON.stringify(value)
+    });
+  }
+
+  // ── STORAGE (async, JSONbin) ──
+  async function loadReviews() {
+    if (_cache.reviews !== null) return _cache.reviews;
+    try { _cache.reviews = await jbGet(BIN_REVIEWS); return _cache.reviews; } catch { return []; }
+  }
+  async function saveReviews(r) {
+    _cache.reviews = r;
+    await jbSet(BIN_REVIEWS, r);
+  }
+  async function loadDrivers(server) {
+    if (_cache.drivers !== null) return _cache.drivers[server] || [];
+    try { _cache.drivers = await jbGet(BIN_DRIVERS); return _cache.drivers[server] || []; } catch { return []; }
+  }
+  async function saveDrivers(server, d) {
+    if (!_cache.drivers) _cache.drivers = { Mandalika: [], Nexotis: [] };
+    _cache.drivers[server] = d;
+    await jbSet(BIN_DRIVERS, _cache.drivers);
+  }
+  async function loadLocks() {
+    if (_cache.locks !== null) return _cache.locks;
+    try { _cache.locks = await jbGet(BIN_LOCKS); return _cache.locks; } catch { return { mk: false, nx: false }; }
+  }
+  async function saveLocks(l) {
+    _cache.locks = l;
+    await jbSet(BIN_LOCKS, l);
+  }
+  function invalidateCache() { _cache = { reviews: null, drivers: null, locks: null }; }
 
   // ── TABS ──
   function switchTab(id, btn) {
@@ -926,6 +972,8 @@
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('tab-' + id).classList.add('active');
     if (btn) btn.classList.add('active');
+    // Invalidate cache setiap ganti tab agar data selalu fresh dari server
+    invalidateCache();
     if (id === 'lihat-rating') renderReviews();
     if (id === 'leaderboard')  renderLeaderboard();
   }
@@ -950,7 +998,7 @@
   }
 
   // ── SUBMIT PANEL ──
-  function submitPanel(panel, serverName) {
+  async function submitPanel(panel, serverName) {
     const nama    = document.getElementById('input-nama').value.trim();
     const driver  = document.getElementById('input-driver-' + panel).value;
     const bintang = panelStars[panel];
@@ -961,14 +1009,15 @@
     if (!bintang) return showToast('⚠️ Pilih bintang dulu!', '#e74c3c');
     if (!alasan)  return showToast('⚠️ Komentar wajib diisi!', '#e74c3c');
 
-    const reviews = loadReviews();
+    showToast('⏳ Mengirim rating...', '#1d6fa4');
+    const reviews = await loadReviews();
     reviews.unshift({
       id: Date.now(), nama, server: serverName, driver, bintang, alasan,
       tanggal: new Date().toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'}),
       reply: null
     });
-    saveReviews(reviews);
-    updateStats(reviews);
+    await saveReviews(reviews);
+    await updateStats(reviews);
 
     // Reset panel form
     document.getElementById('input-driver-' + panel).value = '';
@@ -990,9 +1039,10 @@
   }
 
   // ── RENDER REVIEWS ──
-  function renderReviews() {
-    const reviews   = loadReviews();
+  async function renderReviews() {
     const container = document.getElementById('reviews-container');
+    container.innerHTML = `<div class="empty-state"><div class="icon">⏳</div><p>Memuat rating...</p></div>`;
+    const reviews   = await loadReviews();
     const filtered  = currentFilter === 'semua' ? reviews
       : currentFilter === '5' ? reviews.filter(r => r.bintang === 5)
       : reviews.filter(r => r.server === currentFilter);
@@ -1050,7 +1100,7 @@
         </div>
       </div>
     `).join('');
-    updateStats(reviews);
+    await updateStats(reviews);
   }
 
   function filterReviews(val, el) {
@@ -1067,17 +1117,18 @@
     form.classList.toggle('open', !isOpen);
     if (!isOpen) document.getElementById('ri-'+id).focus();
   }
-  function sendReply(id) {
+  async function sendReply(id) {
     const val = document.getElementById('ri-'+id).value.trim();
     if (!val) return showToast('⚠️ Tulis balasan dulu!', '#e74c3c');
-    const reviews = loadReviews();
+    showToast('⏳ Mengirim balasan...', '#1d6fa4');
+    const reviews = await loadReviews();
     const idx = reviews.findIndex(r => r.id === id);
-    if (idx > -1) { reviews[idx].reply = val; saveReviews(reviews); showToast('✅ Balasan terkirim!'); renderReviews(); }
+    if (idx > -1) { reviews[idx].reply = val; await saveReviews(reviews); showToast('✅ Balasan terkirim!'); renderReviews(); }
   }
 
   // ── LEADERBOARD ──
-  function computeLeaderboard() {
-    const reviews = loadReviews();
+  async function computeLeaderboard() {
+    const reviews = await loadReviews();
     const map = {};
     reviews.forEach(r => {
       if (!r.driver) return;
@@ -1089,9 +1140,10 @@
       .map(([name, d]) => ({ name, total:d.total, avg:d.sum/d.total }))
       .sort((a,b) => b.avg - a.avg || b.total - a.total);
   }
-  function renderLeaderboard() {
-    const data = computeLeaderboard();
-    const el   = document.getElementById('leaderboard-content');
+  async function renderLeaderboard() {
+    const el = document.getElementById('leaderboard-content');
+    el.innerHTML = `<div class="empty-state"><div class="icon">⏳</div><p>Memuat leaderboard...</p></div>`;
+    const data = await computeLeaderboard();
     if (data.length === 0) {
       el.innerHTML = `<div class="empty-state"><div class="icon">🏆</div><p>Belum ada data rating.</p></div>`;
       return;
@@ -1143,11 +1195,13 @@
     el.innerHTML = podiumHtml + listHtml;
   }
 
-  // ── STATS ──
-  function updateStats(reviews) {
+  async function updateStats(reviews) {
+    if (!reviews) reviews = await loadReviews();
     const total   = reviews.length;
     const avg     = total ? (reviews.reduce((s,r) => s+r.bintang,0)/total).toFixed(1) : '—';
-    const drivers = loadDrivers('Mandalika').length + loadDrivers('Nexotis').length;
+    const mkDrivers = await loadDrivers('Mandalika');
+    const nxDrivers = await loadDrivers('Nexotis');
+    const drivers = mkDrivers.length + nxDrivers.length;
     document.getElementById('stat-total').textContent   = total;
     document.getElementById('stat-avg').textContent     = avg==='—' ? '—' : avg+' ⭐';
     document.getElementById('stat-drivers').textContent = drivers;
@@ -1166,9 +1220,8 @@
     setTimeout(() => t.classList.remove('show'), 3000);
   }
 
-  // ── PANEL DRIVER DROPDOWN ──
   function renderPanelDriverDropdown(server, listId, csId, hiddenId) {
-    const drivers = loadDrivers(server);
+    const drivers = _cache.drivers ? (_cache.drivers[server] || []) : [];
     const listEl  = document.getElementById(listId);
     if (!listEl) return;
     if (!drivers.length) {
@@ -1199,11 +1252,6 @@
     el.classList.remove('open');
   }
 
-  function refreshAllDropdowns() {
-    renderPanelDriverDropdown('Mandalika', 'cs-driver-mk-list', 'cs-driver-mk', 'input-driver-mk');
-    renderPanelDriverDropdown('Nexotis',   'cs-driver-nx-list', 'cs-driver-nx', 'input-driver-nx');
-  }
-
   // ── CUSTOM SELECT ──
   function toggleSelect(id) {
     const el = document.getElementById(id);
@@ -1220,7 +1268,7 @@
   // ── ADMIN DRIVER MANAGEMENT ──
   let activeDriverTab = 'mk';
 
-  function switchDriverTab(tab) {
+  async function switchDriverTab(tab) {
     activeDriverTab = tab;
     document.getElementById('dpanel-mk').style.display = tab === 'mk' ? 'block' : 'none';
     document.getElementById('dpanel-nx').style.display = tab === 'nx' ? 'block' : 'none';
@@ -1233,39 +1281,41 @@
       btnNx.style.background = '#3d0e2c'; btnNx.style.color = 'var(--nx-pink)';
       btnMk.style.background = 'transparent'; btnMk.style.color = 'var(--muted)';
     }
-    renderDriverListAdmin(tab);
+    await renderDriverListAdmin(tab);
   }
 
-  function addDriver(tab) {
+  async function addDriver(tab) {
     const server  = tab === 'mk' ? 'Mandalika' : 'Nexotis';
     const inputId = 'input-new-driver-' + tab;
     const val     = document.getElementById(inputId).value.trim();
     if (!val) return showToast('⚠️ Nama driver wajib diisi!', '#e74c3c');
-    const drivers = loadDrivers(server);
+    const drivers = await loadDrivers(server);
     if (drivers.includes(val)) return showToast('⚠️ Nama driver sudah ada!', '#e74c3c');
     drivers.push(val);
-    saveDrivers(server, drivers);
+    showToast('⏳ Menyimpan...', '#1d6fa4');
+    await saveDrivers(server, drivers);
     document.getElementById(inputId).value = '';
-    refreshAllDropdowns();
-    renderDriverListAdmin(tab);
-    updateStats(loadReviews());
+    await refreshAllDropdowns();
+    await renderDriverListAdmin(tab);
+    await updateStats(null);
     showToast('✅ Driver berhasil ditambahkan!');
   }
 
-  function removeDriver(tab, idx) {
+  async function removeDriver(tab, idx) {
     const server  = tab === 'mk' ? 'Mandalika' : 'Nexotis';
-    const drivers = loadDrivers(server);
+    const drivers = await loadDrivers(server);
     drivers.splice(idx, 1);
-    saveDrivers(server, drivers);
-    refreshAllDropdowns();
-    renderDriverListAdmin(tab);
-    updateStats(loadReviews());
+    showToast('⏳ Menghapus...', '#1d6fa4');
+    await saveDrivers(server, drivers);
+    await refreshAllDropdowns();
+    await renderDriverListAdmin(tab);
+    await updateStats(null);
     showToast('🗑️ Driver berhasil dihapus!');
   }
 
-  function renderDriverListAdmin(tab) {
+  async function renderDriverListAdmin(tab) {
     const server    = tab === 'mk' ? 'Mandalika' : 'Nexotis';
-    const drivers   = loadDrivers(server);
+    const drivers   = await loadDrivers(server);
     const container = document.getElementById('driver-list-' + tab);
     if (!container) return;
     if (!drivers.length) {
@@ -1281,11 +1331,11 @@
     `).join('');
   }
 
-  function toggleDriverPanel() {
+  async function toggleDriverPanel() {
     const panel  = document.getElementById('driver-panel');
     const isOpen = panel.style.display !== 'none';
     panel.style.display = isOpen ? 'none' : 'block';
-    if (!isOpen) { switchDriverTab('mk'); }
+    if (!isOpen) { await switchDriverTab('mk'); }
   }
 
   // ── ADMIN AUTH ──
@@ -1315,6 +1365,7 @@
     document.getElementById('admin-login-bar').style.display  = 'none';
     document.getElementById('admin-logged-bar').style.display = 'block';
     showToast('✅ Mode admin aktif!');
+    invalidateCache();
     renderReviews();
   }
 
@@ -1323,6 +1374,7 @@
     document.getElementById('admin-logged-bar').style.display = 'none';
     document.getElementById('driver-panel').style.display     = 'none';
     showToast('👋 Keluar dari mode admin');
+    invalidateCache();
     renderReviews();
   }
 
@@ -1335,8 +1387,9 @@
     pendingDeleteId = null;
     document.getElementById('modal-overlay').classList.remove('open');
   }
-  function confirmDelete() {
-    saveReviews(loadReviews().filter(r => r.id !== pendingDeleteId));
+  async function confirmDelete() {
+    const reviews = await loadReviews();
+    await saveReviews(reviews.filter(r => r.id !== pendingDeleteId));
     closeModal();
     showToast('🗑️ Rating berhasil dihapus!');
     renderReviews();
@@ -1345,22 +1398,9 @@
     if (e.target === this) closeModal();
   });
 
-  // ── INIT ──
-  refreshAllDropdowns();
-  updateStats(loadReviews());
-
-  
-
-
-  
   // ── PANEL LOCK ──
-  function loadLocks() {
-    try { return JSON.parse(localStorage.getItem('opang_locks') || '{}'); } catch { return {}; }
-  }
-  function saveLocks(l) { localStorage.setItem('opang_locks', JSON.stringify(l)); }
-
-  function applyLocks() {
-    const locks = loadLocks();
+  async function applyLocks() {
+    const locks = await loadLocks();
     const bothLocked = locks['mk'] && locks['nx'];
 
     ['mk', 'nx'].forEach(panel => {
@@ -1392,17 +1432,29 @@
     });
   }
 
-  function togglePanelLock(panel) {
-    const locks  = loadLocks();
+  async function togglePanelLock(panel) {
+    const locks  = await loadLocks();
     locks[panel] = !locks[panel];
-    saveLocks(locks);
+    await saveLocks(locks);
     applyLocks();
     const server = panel === 'mk' ? 'Mandalika' : 'Nexotis';
     showToast(locks[panel] ? '🔒 ' + server + ' dikunci!' : '🔓 ' + server + ' dibuka!');
   }
 
-  // Apply locks on page load
-  applyLocks();
+  // ── INIT ──
+  async function refreshAllDropdowns() {
+    const mkDrivers = await loadDrivers('Mandalika');
+    const nxDrivers = await loadDrivers('Nexotis');
+    renderPanelDriverDropdown('Mandalika', 'cs-driver-mk-list', 'cs-driver-mk', 'input-driver-mk');
+    renderPanelDriverDropdown('Nexotis',   'cs-driver-nx-list', 'cs-driver-nx', 'input-driver-nx');
+  }
+
+  async function init() {
+    await refreshAllDropdowns();
+    await updateStats(null);
+    await applyLocks();
+  }
+  init();
 
 </script>
 </body>
