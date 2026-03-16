@@ -1007,7 +1007,13 @@
   }
   async function saveLocks(l) {
     setCache('locks', l);
-    jbSet(BIN_LOCKS, l).catch(e => console.error('saveLocks:', e));
+    // Locks WAJIB await - data penting, tidak boleh background
+    try { await jbSet(BIN_LOCKS, l); }
+    catch(e) {
+      console.error('saveLocks error:', e);
+      showToast('❌ Gagal menyimpan lock, coba lagi!', '#e74c3c');
+      invalidateCache('locks');
+    }
   }
 
   // ── TABS ──
@@ -1518,14 +1524,13 @@
   }
 
   async function togglePanelLock(panel) {
-    // Ambil locks dari cache/server, toggle, update cache + UI langsung
     const locks = await loadLocks();
     locks[panel] = !locks[panel];
-    setCache('locks', locks);  // update cache dulu
-    saveLocks(locks);          // simpan ke server di background
-    applyLocksFromCache(locks); // langsung apply pakai object yang sudah ditoggle
+    setCache('locks', locks);    // update cache dulu biar UI langsung berubah
+    applyLocksFromCache(locks);  // apply UI langsung (optimistic)
     const server = panel === 'mk' ? 'Mandalika' : 'Nexotis';
     showToast(locks[panel] ? '🔒 ' + server + ' dikunci!' : '🔓 ' + server + ' dibuka!');
+    await saveLocks(locks);      // await - pastikan tersimpan ke server
   }
 
   // ── INIT ──
