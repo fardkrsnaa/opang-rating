@@ -896,7 +896,16 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- Firebase SDK (compat version) via jsDelivr CDN -->
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-app-compat.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-firestore-compat.min.js"></script>
 <script>
+  // Safety guard — should never happen if CDN loaded, but prevents cryptic errors
+  if (typeof firebase === 'undefined') {
+    document.body.innerHTML = '<div style="font-family:sans-serif;text-align:center;padding:60px 20px;color:#c0392b;"><h2>⚠️ Gagal memuat Firebase</h2><p>Periksa koneksi internet kamu lalu refresh halaman.</p></div>';
+    throw new Error('Firebase SDK failed to load');
+  }
+
   // ── AVATAR ──
   const AVATAR_COLORS = [
     '#f5a623','#e74c3c','#2ecc71','#3498db','#9b59b6',
@@ -923,115 +932,84 @@
   const STAR_LABELS = ['','Sangat Buruk 😤','Kurang Memuaskan 😕','Lumayan 😐','Bagus! 😊','Luar Biasa! 🔥'];
   const panelStars  = { mk: 0, nx: 0 };
 
-  // ── JSONBIN CONFIG ──
-  const JB_KEY        = '$2a$10$z2II/YHw8ss73eRXGKrD6.xPjQE18qMj1Xllx82h2BvNo9grtmPPK';
-  const BIN_REVIEWS   = '69b863c7b7ec241ddc74578d';
-  const BIN_DRIVERS   = '69b86432aa77b81da9ee2d89';
-  const BIN_LOCKS     = '69b8646cb7ec241ddc7459a3';
-  const JB_BASE       = 'https://api.jsonbin.io/v3/b';
-  const JB_HEADERS    = { 'Content-Type': 'application/json', 'X-Master-Key': JB_KEY };
+  // ── FIREBASE INIT ──
+  const firebaseConfig = {
+    apiKey:            "AIzaSyBB8QGAdvSuMoZFbBV8SXCrjXTPqB2zmmg",
+    authDomain:        "opang-rating.firebaseapp.com",
+    projectId:         "opang-rating",
+    storageBucket:     "opang-rating.firebasestorage.app",
+    messagingSenderId: "719636436329",
+    appId:             "1:719636436329:web:64c25b4fedb5a21c8a99f8"
+  };
+  if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
 
-  // ── STORAGE ──
-  // Hanya reviews yang pakai cache (sering dibaca, jarang berubah)
-  // Drivers dan locks TIDAK pakai cache supaya selalu akurat
-
-  let _reviewsCache = null;
-
-  async function jbGet(binId) {
-    const res = await fetch(`${JB_BASE}/${binId}/latest`, { headers: { 'X-Master-Key': JB_KEY } });
-    if (!res.ok) throw new Error('jbGet failed: ' + res.status);
-    const data = await res.json();
-    return data.record;
-  }
-  async function jbSet(binId, value) {
-    const res = await fetch(`${JB_BASE}/${binId}`, {
-      method: 'PUT', headers: JB_HEADERS, body: JSON.stringify(value)
-    });
-    if (!res.ok) throw new Error('jbSet failed: ' + res.status);
-  }
-
-  // ── REVIEWS ──
-  async function loadReviews(forceRefresh) {
-    if (!forceRefresh && _reviewsCache !== null) return _reviewsCache;
+  // ── STORAGE (Firebase Firestore) ──
+  // Reviews
+  async function loadReviews() {
     try {
-      const data = await jbGet(BIN_REVIEWS);
-      _reviewsCache = Array.isArray(data) ? data : [];
-    } catch(e) {
-      console.error('loadReviews error:', e);
-      if (_reviewsCache === null) _reviewsCache = [];
-    }
-    return _reviewsCache;
+      const doc = await db.collection('data').doc('reviews').get();
+      if (doc.exists) {
+        const d = doc.data();
+        return Array.isArray(d.list) ? d.list : [];
+      }
+      return [];
+    } catch(e) { console.error('loadReviews:', e); return []; }
   }
   async function saveReviews(r) {
-    _reviewsCache = r;
-    try { await jbSet(BIN_REVIEWS, r); }
-    catch(e) {
-      console.error('saveReviews error:', e);
-      showToast('❌ Gagal menyimpan rating!', '#e74c3c');
-    }
+    try { await db.collection('data').doc('reviews').set({ list: r }); }
+    catch(e) { console.error('saveReviews:', e); showToast('❌ Gagal menyimpan rating!', '#e74c3c'); }
   }
 
-  // ── DRIVERS (tidak pakai cache, selalu fresh dari server) ──
+  // Drivers
   async function loadAllDrivers() {
     try {
-      const data = await jbGet(BIN_DRIVERS);
-      if (data && !Array.isArray(data) && typeof data === 'object') {
+      const doc = await db.collection('data').doc('drivers').get();
+      if (doc.exists) {
+        const d = doc.data();
         return {
-          Mandalika: Array.isArray(data.Mandalika) ? data.Mandalika : [],
-          Nexotis:   Array.isArray(data.Nexotis)   ? data.Nexotis   : []
+          Mandalika: Array.isArray(d.Mandalika) ? d.Mandalika : [],
+          Nexotis:   Array.isArray(d.Nexotis)   ? d.Nexotis   : []
         };
       }
-      // Format salah, kembalikan kosong
       return { Mandalika: [], Nexotis: [] };
-    } catch(e) {
-      console.error('loadAllDrivers error:', e);
-      return { Mandalika: [], Nexotis: [] };
-    }
+    } catch(e) { console.error('loadAllDrivers:', e); return { Mandalika: [], Nexotis: [] }; }
   }
   async function loadDrivers(server) {
     const all = await loadAllDrivers();
-    return Array.isArray(all[server]) ? all[server] : [];
+    return all[server] || [];
   }
   async function saveDrivers(server, newList) {
-    // Fetch fresh dulu supaya data server lain tidak hilang
-    const all = await loadAllDrivers();
-    const updated = {
-      Mandalika: Array.isArray(all.Mandalika) ? all.Mandalika : [],
-      Nexotis:   Array.isArray(all.Nexotis)   ? all.Nexotis   : []
-    };
-    updated[server] = Array.isArray(newList) ? newList : [];
     try {
-      await jbSet(BIN_DRIVERS, updated);
+      // Fetch dulu supaya server lain tidak hilang
+      const all = await loadAllDrivers();
+      all[server] = newList;
+      await db.collection('data').doc('drivers').set(all);
     } catch(e) {
-      console.error('saveDrivers error:', e);
-      showToast('❌ Gagal menyimpan driver, coba lagi!', '#e74c3c');
+      console.error('saveDrivers:', e);
+      showToast('❌ Gagal menyimpan driver!', '#e74c3c');
     }
   }
 
-  // ── LOCKS (tidak pakai cache, selalu fresh dari server) ──
+  // Locks
   async function loadLocks() {
     try {
-      const data = await jbGet(BIN_LOCKS);
-      if (data && !Array.isArray(data) && typeof data === 'object') {
-        return { mk: !!data.mk, nx: !!data.nx };
+      const doc = await db.collection('data').doc('locks').get();
+      if (doc.exists) {
+        const d = doc.data();
+        return { mk: !!d.mk, nx: !!d.nx };
       }
       return { mk: false, nx: false };
-    } catch(e) {
-      console.error('loadLocks error:', e);
-      return { mk: false, nx: false };
-    }
+    } catch(e) { console.error('loadLocks:', e); return { mk: false, nx: false }; }
   }
   async function saveLocks(l) {
-    try { await jbSet(BIN_LOCKS, l); }
-    catch(e) {
-      console.error('saveLocks error:', e);
-      showToast('❌ Gagal menyimpan lock, coba lagi!', '#e74c3c');
-    }
+    try { await db.collection('data').doc('locks').set(l); }
+    catch(e) { console.error('saveLocks:', e); showToast('❌ Gagal menyimpan lock!', '#e74c3c'); }
   }
 
-  function invalidateCache() { _reviewsCache = null; }
-  function setCache(key, val) { if (key === 'reviews') _reviewsCache = val; }
-  function cacheValid(key) { return key === 'reviews' && _reviewsCache !== null; }
+  function invalidateCache() {}  // tidak perlu cache lagi
+  function setCache() {}
+  function cacheValid() { return false; } // selalu fetch dari server
   // ── TABS ──
   function switchTab(id, btn) {
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
