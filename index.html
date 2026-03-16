@@ -941,28 +941,69 @@
   // ── STORAGE (async, JSONbin) ──
   async function loadReviews() {
     if (_cache.reviews !== null) return _cache.reviews;
-    try { _cache.reviews = await jbGet(BIN_REVIEWS); return _cache.reviews; } catch { return []; }
+    try {
+      const data = await jbGet(BIN_REVIEWS);
+      // Pastikan formatnya array
+      _cache.reviews = Array.isArray(data) ? data : [];
+      return _cache.reviews;
+    } catch { return []; }
   }
   async function saveReviews(r) {
     _cache.reviews = r;
-    await jbSet(BIN_REVIEWS, r);
+    try { await jbSet(BIN_REVIEWS, r); } catch(e) { console.error('saveReviews error:', e); }
   }
   async function loadDrivers(server) {
-    if (_cache.drivers !== null) return _cache.drivers[server] || [];
-    try { _cache.drivers = await jbGet(BIN_DRIVERS); return _cache.drivers[server] || []; } catch { return []; }
+    if (_cache.drivers !== null) {
+      // Pastikan formatnya object, bukan array
+      if (Array.isArray(_cache.drivers)) _cache.drivers = { Mandalika: [], Nexotis: [] };
+      return _cache.drivers[server] || [];
+    }
+    try {
+      const data = await jbGet(BIN_DRIVERS);
+      // Kalau data masih format lama (array) atau tidak punya key server, reset
+      if (!data || Array.isArray(data) || typeof data !== 'object') {
+        _cache.drivers = { Mandalika: [], Nexotis: [] };
+        await jbSet(BIN_DRIVERS, _cache.drivers); // perbaiki data di server juga
+      } else {
+        _cache.drivers = data;
+        if (!_cache.drivers.Mandalika) _cache.drivers.Mandalika = [];
+        if (!_cache.drivers.Nexotis)   _cache.drivers.Nexotis   = [];
+      }
+      return _cache.drivers[server] || [];
+    } catch { return []; }
   }
   async function saveDrivers(server, d) {
-    if (!_cache.drivers) _cache.drivers = { Mandalika: [], Nexotis: [] };
+    if (!_cache.drivers || Array.isArray(_cache.drivers)) {
+      _cache.drivers = { Mandalika: [], Nexotis: [] };
+    }
     _cache.drivers[server] = d;
-    await jbSet(BIN_DRIVERS, _cache.drivers);
+    try { await jbSet(BIN_DRIVERS, _cache.drivers); } catch(e) { console.error('saveDrivers error:', e); }
   }
   async function loadLocks() {
-    if (_cache.locks !== null) return _cache.locks;
-    try { _cache.locks = await jbGet(BIN_LOCKS); return _cache.locks; } catch { return { mk: false, nx: false }; }
+    if (_cache.locks !== null) {
+      // Pastikan formatnya object dengan key mk dan nx
+      if (Array.isArray(_cache.locks) || typeof _cache.locks !== 'object') {
+        _cache.locks = { mk: false, nx: false };
+      }
+      return _cache.locks;
+    }
+    try {
+      const data = await jbGet(BIN_LOCKS);
+      // Kalau data masih format lama (array), reset
+      if (!data || Array.isArray(data) || typeof data !== 'object') {
+        _cache.locks = { mk: false, nx: false };
+        await jbSet(BIN_LOCKS, _cache.locks); // perbaiki data di server juga
+      } else {
+        _cache.locks = data;
+        if (_cache.locks.mk === undefined) _cache.locks.mk = false;
+        if (_cache.locks.nx === undefined) _cache.locks.nx = false;
+      }
+      return _cache.locks;
+    } catch { return { mk: false, nx: false }; }
   }
   async function saveLocks(l) {
     _cache.locks = l;
-    await jbSet(BIN_LOCKS, l);
+    try { await jbSet(BIN_LOCKS, l); } catch(e) { console.error('saveLocks error:', e); }
   }
   function invalidateCache() { _cache = { reviews: null, drivers: null, locks: null }; }
 
@@ -1289,6 +1330,8 @@
     const inputId = 'input-new-driver-' + tab;
     const val     = document.getElementById(inputId).value.trim();
     if (!val) return showToast('⚠️ Nama driver wajib diisi!', '#e74c3c');
+    // Invalidate cache drivers dulu agar dapat data terbaru
+    _cache.drivers = null;
     const drivers = await loadDrivers(server);
     if (drivers.includes(val)) return showToast('⚠️ Nama driver sudah ada!', '#e74c3c');
     drivers.push(val);
@@ -1303,6 +1346,7 @@
 
   async function removeDriver(tab, idx) {
     const server  = tab === 'mk' ? 'Mandalika' : 'Nexotis';
+    _cache.drivers = null;
     const drivers = await loadDrivers(server);
     drivers.splice(idx, 1);
     showToast('⏳ Menghapus...', '#1d6fa4');
@@ -1433,10 +1477,11 @@
   }
 
   async function togglePanelLock(panel) {
+    _cache.locks = null;
     const locks  = await loadLocks();
     locks[panel] = !locks[panel];
     await saveLocks(locks);
-    applyLocks();
+    await applyLocks();
     const server = panel === 'mk' ? 'Mandalika' : 'Nexotis';
     showToast(locks[panel] ? '🔒 ' + server + ' dikunci!' : '🔓 ' + server + ' dibuka!');
   }
