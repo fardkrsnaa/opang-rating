@@ -965,34 +965,50 @@
     setCache('reviews', r);
     jbSet(BIN_REVIEWS, r).catch(e => console.error('saveReviews:', e));
   }
-  function _normalizeDrivers(data) {
-    if (!data || Array.isArray(data) || typeof data !== 'object') return { Mandalika: [], Nexotis: [] };
-    return { Mandalika: data.Mandalika || [], Nexotis: data.Nexotis || [] };
-  }
   async function loadAllDrivers() {
-    // Selalu load SEMUA data driver sekaligus dari server
+    // Selalu load SEMUA data driver dari server, simpan penuh ke cache
     if (cacheValid('drivers')) return _cache.drivers;
     try {
       const data = await jbGet(BIN_DRIVERS);
-      const normalized = _normalizeDrivers(data);
+      // Pastikan formatnya object dengan key Mandalika dan Nexotis
+      let normalized;
+      if (!data || Array.isArray(data) || typeof data !== 'object') {
+        normalized = { Mandalika: [], Nexotis: [] };
+      } else {
+        normalized = {
+          Mandalika: Array.isArray(data.Mandalika) ? data.Mandalika : [],
+          Nexotis:   Array.isArray(data.Nexotis)   ? data.Nexotis   : []
+        };
+      }
       setCache('drivers', normalized);
-      if (!data || Array.isArray(data)) jbSet(BIN_DRIVERS, normalized).catch(()=>{});
-    } catch { if (!_cache.drivers) setCache('drivers', { Mandalika: [], Nexotis: [] }); }
+      // Kalau format lama, perbaiki di server sekalian
+      if (!data || Array.isArray(data)) {
+        await jbSet(BIN_DRIVERS, normalized);
+      }
+    } catch(e) {
+      console.error('loadAllDrivers error:', e);
+      if (!_cache.drivers) setCache('drivers', { Mandalika: [], Nexotis: [] });
+    }
     return _cache.drivers;
   }
   async function loadDrivers(server) {
     const all = await loadAllDrivers();
-    return all[server] || [];
+    return Array.isArray(all[server]) ? [...all[server]] : [];
   }
-  async function saveDrivers(server, d) {
-    // Pastikan cache sudah ada data SEMUA server sebelum save
-    // supaya tidak overwrite server lain dengan array kosong
+  async function saveDrivers(server, newList) {
+    // Selalu fetch fresh dari server dulu supaya tidak kehilangan data server lain
+    invalidateCache('drivers');
     const all = await loadAllDrivers();
-    all[server] = d;
-    setCache('drivers', all);
-    // Driver data WAJIB await - tidak boleh background karena data penting
-    try { await jbSet(BIN_DRIVERS, all); }
-    catch(e) {
+    // Update hanya server yang diminta, jangan sentuh server lain
+    const updated = {
+      Mandalika: Array.isArray(all.Mandalika) ? [...all.Mandalika] : [],
+      Nexotis:   Array.isArray(all.Nexotis)   ? [...all.Nexotis]   : []
+    };
+    updated[server] = newList;
+    setCache('drivers', updated);
+    try {
+      await jbSet(BIN_DRIVERS, updated);
+    } catch(e) {
       console.error('saveDrivers error:', e);
       showToast('❌ Gagal menyimpan driver, coba lagi!', '#e74c3c');
       invalidateCache('drivers');
@@ -1380,15 +1396,13 @@
     const inputId = 'input-new-driver-' + tab;
     const val     = document.getElementById(inputId).value.trim();
     if (!val) return showToast('⚠️ Nama driver wajib diisi!', '#e74c3c');
-    // Fetch fresh dari server (invalidate dulu supaya dapat data terbaru)
-    invalidateCache('drivers');
-    await loadAllDrivers(); // load SEMUA server sekaligus ke cache
+    // loadDrivers akan fetch fresh karena saveDrivers selalu invalidate cache
     const drivers = await loadDrivers(server);
     if (drivers.includes(val)) return showToast('⚠️ Nama driver sudah ada!', '#e74c3c');
-    drivers.push(val);
+    const newList = [...drivers, val];
     document.getElementById(inputId).value = '';
     showToast('⏳ Menyimpan driver...', '#1d6fa4');
-    await saveDrivers(server, drivers); // WAJIB await - jangan background
+    await saveDrivers(server, newList);
     await refreshAllDropdowns();
     await renderDriverListAdmin(tab);
     updateStats(null);
@@ -1397,12 +1411,10 @@
 
   async function removeDriver(tab, idx) {
     const server  = tab === 'mk' ? 'Mandalika' : 'Nexotis';
-    invalidateCache('drivers');
-    await loadAllDrivers(); // load SEMUA server sekaligus ke cache
     const drivers = await loadDrivers(server);
-    drivers.splice(idx, 1);
+    const newList = drivers.filter((_, i) => i !== idx);
     showToast('⏳ Menghapus driver...', '#1d6fa4');
-    await saveDrivers(server, drivers); // WAJIB await
+    await saveDrivers(server, newList);
     await refreshAllDropdowns();
     await renderDriverListAdmin(tab);
     updateStats(null);
