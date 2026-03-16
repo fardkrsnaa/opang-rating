@@ -590,6 +590,49 @@
     text-transform: uppercase;
     color: #fff;
   }
+
+  /* ── PANEL LOCK ── */
+  .panel-lock-overlay {
+    display: none;
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    border-radius: 17px;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+    padding: 20px;
+  }
+  .mandalika .panel-lock-overlay {
+    background: rgba(13,31,13,0.88);
+    backdrop-filter: blur(4px);
+  }
+  .nexotis .panel-lock-overlay {
+    background: rgba(26,5,18,0.88);
+    backdrop-filter: blur(4px);
+  }
+  .panel-lock-overlay.visible { display: flex; }
+
+  .lock-icon { font-size: 42px; }
+  .lock-title {
+    font-family: 'Lilita One', cursive;
+    font-size: 18px;
+    letter-spacing: 1px;
+    line-height: 1.3;
+  }
+  .mandalika .lock-title { color: var(--mk-green); }
+  .nexotis  .lock-title  { color: var(--nx-pink); }
+  .lock-sub {
+    font-size: 12px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 1px;
+  }
+
+  /* server-panel needs position relative for overlay */
+  .server-panel { position: relative; }
 </style>
 </head>
 <body>
@@ -646,6 +689,13 @@
         </div>
         <div class="panel-select-hint">Tap untuk pilih server ini</div>
 
+        <!-- Lock Overlay Mandalika -->
+        <div class="panel-lock-overlay" id="lock-mk">
+          <div class="lock-icon">🔒</div>
+          <div class="lock-title">Driver Sedang Di<br>Kota Mandalika</div>
+          <div class="lock-sub">Coba lagi nanti</div>
+        </div>
+
         <div class="panel-form-area">
           <div class="panel-divider"></div>
 
@@ -695,6 +745,13 @@
           </div>
         </div>
         <div class="panel-select-hint">Tap untuk pilih server ini</div>
+
+        <!-- Lock Overlay Nexotis -->
+        <div class="panel-lock-overlay" id="lock-nx">
+          <div class="lock-icon">🔒</div>
+          <div class="lock-title">Driver Sedang Di<br>Kota Nexotis</div>
+          <div class="lock-sub">Coba lagi nanti</div>
+        </div>
 
         <div class="panel-form-area">
           <div class="panel-divider"></div>
@@ -763,6 +820,8 @@
         <span style="font-size:13px;color:var(--accent);font-weight:800;">✅ Mode Admin Aktif</span>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <button onclick="toggleDriverPanel()" style="padding:6px 14px;background:rgba(212,66,10,0.1);border:2px solid rgba(212,66,10,0.3);border-radius:8px;color:var(--accent);font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;cursor:pointer;">🛵 Kelola Driver</button>
+          <button id="btn-lock-mk" onclick="togglePanelLock('mk')" style="padding:6px 14px;background:rgba(57,224,58,0.1);border:2px solid rgba(57,224,58,0.3);border-radius:8px;color:#39e03a;font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;cursor:pointer;">🔓 Mandalika</button>
+          <button id="btn-lock-nx" onclick="togglePanelLock('nx')" style="padding:6px 14px;background:rgba(201,81,138,0.1);border:2px solid rgba(201,81,138,0.3);border-radius:8px;color:var(--nx-pink);font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;cursor:pointer;">🔓 Nexotis</button>
           <button onclick="doAdminLogout()" style="padding:6px 14px;background:transparent;border:2px solid rgba(192,57,43,0.3);border-radius:8px;color:var(--red);font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;cursor:pointer;">Keluar</button>
         </div>
       </div>
@@ -1293,6 +1352,42 @@
   
 
 
-  </script>
+  
+  // ── PANEL LOCK ──
+  function loadLocks() {
+    try { return JSON.parse(localStorage.getItem('opang_locks') || '{}'); } catch { return {}; }
+  }
+  function saveLocks(l) { localStorage.setItem('opang_locks', JSON.stringify(l)); }
+
+  function applyLocks() {
+    const locks = loadLocks();
+    ['mk', 'nx'].forEach(panel => {
+      const overlay = document.getElementById('lock-' + panel);
+      const btn     = document.getElementById('btn-lock-' + panel);
+      const server  = panel === 'mk' ? 'Mandalika' : 'Nexotis';
+      if (!overlay) return;
+      if (locks[panel]) {
+        overlay.classList.add('visible');
+        if (btn) { btn.textContent = '🔒 ' + server; btn.style.opacity = '0.7'; }
+      } else {
+        overlay.classList.remove('visible');
+        if (btn) { btn.textContent = '🔓 ' + server; btn.style.opacity = '1'; }
+      }
+    });
+  }
+
+  function togglePanelLock(panel) {
+    const locks  = loadLocks();
+    locks[panel] = !locks[panel];
+    saveLocks(locks);
+    applyLocks();
+    const server = panel === 'mk' ? 'Mandalika' : 'Nexotis';
+    showToast(locks[panel] ? '🔒 ' + server + ' dikunci!' : '🔓 ' + server + ' dibuka!');
+  }
+
+  // Apply locks on page load
+  applyLocks();
+
+</script>
 </body>
 </html>
