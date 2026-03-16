@@ -50,22 +50,11 @@
 
   .container { max-width: 900px; margin: 0 auto; padding: 0 16px; position: relative; z-index: 1; }
 
-  /* ── BANNER ── */
-  .banner-wrap {
-    width: 100%; max-height: 220px; overflow: hidden;
-    position: relative; border-bottom: 4px solid var(--accent);
-  }
-  .banner-wrap img { width:100%; object-fit:cover; object-position:center top; display:block; }
-  .banner-overlay { position:absolute; inset:0; background:linear-gradient(to bottom, transparent 40%, rgba(245,234,214,0.95) 100%); }
+  
+
 
   /* ── HEADER ── */
   header { padding: 0 16px 0; text-align: center; position: relative; }
-  .warung-sign {
-    display:inline-block; background:var(--accent); color:#fff;
-    font-family:'Lilita One',cursive; font-size:11px; letter-spacing:3px; text-transform:uppercase;
-    padding:6px 20px; border-radius:0 0 12px 12px; margin-bottom:16px;
-    box-shadow:0 4px 12px rgba(212,66,10,0.3);
-  }
   .hero-title {
     font-family:'Lilita One',cursive; font-size:clamp(52px,11vw,100px);
     line-height:0.95; color:var(--accent);
@@ -557,24 +546,62 @@
     .podium-name { max-width:72px; font-size:12px; }
     .driver-stat .num { font-size:24px; }
     .lb-row { padding:10px 12px; gap:10px; }
-    .banner-wrap { max-height:160px; }
   }
   @media (max-width:380px) {
     .tabs { gap:2px; padding:3px; }
     .tab-btn { font-size:11px; padding:9px 8px; }
   }
+
+  
+
+  
+
+  /* ── THIN HEADER BAR ── */
+  .top-bar {
+    width: 100%;
+    background: var(--accent);
+    padding: 6px 0;
+    text-align: center;
+    position: relative;
+  }
+  .top-bar::before,
+  .top-bar::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 1px;
+    width: calc(50% - 120px);
+    background: rgba(255,255,255,0.3);
+  }
+  .top-bar::before { left: 16px; }
+  .top-bar::after  { right: 16px; }
+  .top-bar-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0,0,0,0.15);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 50px;
+    padding: 4px 16px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #fff;
+  }
 </style>
 </head>
 <body>
 
-<div class="banner-wrap">
-  <img src="" alt="Warung Bacot Banner">
-  <div class="banner-overlay"></div>
+<!-- TOP BAR -->
+<div class="top-bar">
+  <span class="top-bar-text">🛵 GTA SAMP Roleplay</span>
 </div>
+
 
 <div class="container">
   <header>
-    <div class="warung-sign">🛵 GTA SAMP Roleplay</div>
     <div class="hero-title">OPANG<br>RATING</div>
     <div class="hero-sub">Ojek Pangkalan · In Character</div>
     <div class="driver-info">
@@ -1262,6 +1289,10 @@
   // ── INIT ──
   refreshAllDropdowns();
   updateStats(loadReviews());
-</script>
+
+  
+
+
+  </script>
 </body>
 </html>
