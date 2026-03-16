@@ -533,6 +533,15 @@
   .empty-state .icon { font-size:48px; margin-bottom:12px; }
   .empty-state p { font-size:15px; font-weight:700; line-height:1.6; }
 
+  /* ── SKELETON ── */
+  @keyframes shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
+  .skel {
+    background: linear-gradient(90deg, var(--border) 25%, var(--bg2) 50%, var(--border) 75%);
+    background-size: 800px 100%;
+    animation: shimmer 1.4s infinite linear;
+    display: block;
+  }
+
   .toast { position:fixed; bottom:24px; right:16px; background:var(--accent); color:#fff; font-weight:800; font-size:14px; padding:14px 22px; border-radius:12px; box-shadow:0 8px 24px rgba(212,66,10,0.4); transform:translateY(80px); opacity:0; z-index:999; pointer-events:none; transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1); max-width:calc(100vw - 32px); border:2px solid rgba(255,255,255,0.2); }
   .toast.show { transform:translateY(0); opacity:1; }
 
@@ -922,8 +931,17 @@
   const JB_BASE       = 'https://api.jsonbin.io/v3/b';
   const JB_HEADERS    = { 'Content-Type': 'application/json', 'X-Master-Key': JB_KEY };
 
-  // Local cache to avoid excessive API calls
+  // ── CACHE dengan TTL 60 detik ──
+  const CACHE_TTL = 60000;
   let _cache = { reviews: null, drivers: null, locks: null };
+  let _cacheTime = { reviews: 0, drivers: 0, locks: 0 };
+
+  function cacheValid(key) { return _cache[key] !== null && (Date.now() - _cacheTime[key]) < CACHE_TTL; }
+  function setCache(key, val) { _cache[key] = val; _cacheTime[key] = Date.now(); }
+  function invalidateCache(key) {
+    if (key) { _cache[key] = null; _cacheTime[key] = 0; }
+    else { _cache = { reviews: null, drivers: null, locks: null }; _cacheTime = { reviews: 0, drivers: 0, locks: 0 }; }
+  }
 
   async function jbGet(binId) {
     const res  = await fetch(`${JB_BASE}/${binId}/latest`, { headers: { 'X-Master-Key': JB_KEY } });
@@ -931,81 +949,60 @@
     return data.record;
   }
   async function jbSet(binId, value) {
-    await fetch(`${JB_BASE}/${binId}`, {
-      method: 'PUT',
-      headers: JB_HEADERS,
-      body: JSON.stringify(value)
-    });
+    await fetch(`${JB_BASE}/${binId}`, { method: 'PUT', headers: JB_HEADERS, body: JSON.stringify(value) });
   }
 
-  // ── STORAGE (async, JSONbin) ──
+  // ── STORAGE (optimistic + cached) ──
   async function loadReviews() {
-    if (_cache.reviews !== null) return _cache.reviews;
+    if (cacheValid('reviews')) return _cache.reviews;
     try {
       const data = await jbGet(BIN_REVIEWS);
-      // Pastikan formatnya array
-      _cache.reviews = Array.isArray(data) ? data : [];
-      return _cache.reviews;
-    } catch { return []; }
+      setCache('reviews', Array.isArray(data) ? data : []);
+    } catch { if (!_cache.reviews) setCache('reviews', []); }
+    return _cache.reviews;
   }
   async function saveReviews(r) {
-    _cache.reviews = r;
-    try { await jbSet(BIN_REVIEWS, r); } catch(e) { console.error('saveReviews error:', e); }
+    setCache('reviews', r);
+    jbSet(BIN_REVIEWS, r).catch(e => console.error('saveReviews:', e));
+  }
+  function _normalizeDrivers(data) {
+    if (!data || Array.isArray(data) || typeof data !== 'object') return { Mandalika: [], Nexotis: [] };
+    return { Mandalika: data.Mandalika || [], Nexotis: data.Nexotis || [] };
   }
   async function loadDrivers(server) {
-    if (_cache.drivers !== null) {
-      // Pastikan formatnya object, bukan array
-      if (Array.isArray(_cache.drivers)) _cache.drivers = { Mandalika: [], Nexotis: [] };
-      return _cache.drivers[server] || [];
-    }
+    if (cacheValid('drivers')) return _cache.drivers[server] || [];
     try {
       const data = await jbGet(BIN_DRIVERS);
-      // Kalau data masih format lama (array) atau tidak punya key server, reset
-      if (!data || Array.isArray(data) || typeof data !== 'object') {
-        _cache.drivers = { Mandalika: [], Nexotis: [] };
-        await jbSet(BIN_DRIVERS, _cache.drivers); // perbaiki data di server juga
-      } else {
-        _cache.drivers = data;
-        if (!_cache.drivers.Mandalika) _cache.drivers.Mandalika = [];
-        if (!_cache.drivers.Nexotis)   _cache.drivers.Nexotis   = [];
-      }
-      return _cache.drivers[server] || [];
-    } catch { return []; }
+      const normalized = _normalizeDrivers(data);
+      setCache('drivers', normalized);
+      if (!data || Array.isArray(data)) jbSet(BIN_DRIVERS, normalized).catch(()=>{});
+    } catch { if (!_cache.drivers) setCache('drivers', { Mandalika: [], Nexotis: [] }); }
+    return _cache.drivers[server] || [];
   }
   async function saveDrivers(server, d) {
-    if (!_cache.drivers || Array.isArray(_cache.drivers)) {
-      _cache.drivers = { Mandalika: [], Nexotis: [] };
-    }
-    _cache.drivers[server] = d;
-    try { await jbSet(BIN_DRIVERS, _cache.drivers); } catch(e) { console.error('saveDrivers error:', e); }
+    const cur = _cache.drivers ? { ..._cache.drivers } : { Mandalika: [], Nexotis: [] };
+    cur[server] = d;
+    setCache('drivers', cur);
+    jbSet(BIN_DRIVERS, cur).catch(e => console.error('saveDrivers:', e));
+  }
+  function _normalizeLocks(data) {
+    if (!data || Array.isArray(data) || typeof data !== 'object') return { mk: false, nx: false };
+    return { mk: !!data.mk, nx: !!data.nx };
   }
   async function loadLocks() {
-    if (_cache.locks !== null) {
-      // Pastikan formatnya object dengan key mk dan nx
-      if (Array.isArray(_cache.locks) || typeof _cache.locks !== 'object') {
-        _cache.locks = { mk: false, nx: false };
-      }
-      return _cache.locks;
-    }
+    if (cacheValid('locks')) return _cache.locks;
     try {
       const data = await jbGet(BIN_LOCKS);
-      // Kalau data masih format lama (array), reset
-      if (!data || Array.isArray(data) || typeof data !== 'object') {
-        _cache.locks = { mk: false, nx: false };
-        await jbSet(BIN_LOCKS, _cache.locks); // perbaiki data di server juga
-      } else {
-        _cache.locks = data;
-        if (_cache.locks.mk === undefined) _cache.locks.mk = false;
-        if (_cache.locks.nx === undefined) _cache.locks.nx = false;
-      }
-      return _cache.locks;
-    } catch { return { mk: false, nx: false }; }
+      const normalized = _normalizeLocks(data);
+      setCache('locks', normalized);
+      if (!data || Array.isArray(data)) jbSet(BIN_LOCKS, normalized).catch(()=>{});
+    } catch { if (!_cache.locks) setCache('locks', { mk: false, nx: false }); }
+    return _cache.locks;
   }
   async function saveLocks(l) {
-    _cache.locks = l;
-    try { await jbSet(BIN_LOCKS, l); } catch(e) { console.error('saveLocks error:', e); }
+    setCache('locks', l);
+    jbSet(BIN_LOCKS, l).catch(e => console.error('saveLocks:', e));
   }
-  function invalidateCache() { _cache = { reviews: null, drivers: null, locks: null }; }
 
   // ── TABS ──
   function switchTab(id, btn) {
@@ -1050,15 +1047,16 @@
     if (!bintang) return showToast('⚠️ Pilih bintang dulu!', '#e74c3c');
     if (!alasan)  return showToast('⚠️ Komentar wajib diisi!', '#e74c3c');
 
-    showToast('⏳ Mengirim rating...', '#1d6fa4');
-    const reviews = await loadReviews();
-    reviews.unshift({
+    // Optimistic: langsung update UI tanpa tunggu server
+    const newReview = {
       id: Date.now(), nama, server: serverName, driver, bintang, alasan,
       tanggal: new Date().toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'}),
       reply: null
-    });
-    await saveReviews(reviews);
-    await updateStats(reviews);
+    };
+    const reviews = _cache.reviews ? [newReview, ..._cache.reviews] : [newReview];
+    setCache('reviews', reviews);
+    updateStats(reviews);
+    saveReviews(reviews); // sync ke server di background
 
     // Reset panel form
     document.getElementById('input-driver-' + panel).value = '';
@@ -1079,10 +1077,29 @@
     document.querySelectorAll('.tab-btn')[1].click();
   }
 
+  // ── SKELETON LOADING ──
+  function skeletonCard() {
+    return `<div class="review-card" style="pointer-events:none">
+      <div style="display:flex;gap:12px;align-items:center;margin-bottom:14px">
+        <div class="skel" style="width:42px;height:42px;border-radius:50%"></div>
+        <div style="flex:1">
+          <div class="skel" style="width:40%;height:14px;border-radius:6px;margin-bottom:8px"></div>
+          <div class="skel" style="width:60%;height:10px;border-radius:6px"></div>
+        </div>
+      </div>
+      <div class="skel" style="width:80px;height:16px;border-radius:6px;margin-bottom:10px"></div>
+      <div class="skel" style="width:100%;height:12px;border-radius:6px;margin-bottom:6px"></div>
+      <div class="skel" style="width:75%;height:12px;border-radius:6px"></div>
+    </div>`;
+  }
+
   // ── RENDER REVIEWS ──
   async function renderReviews() {
     const container = document.getElementById('reviews-container');
-    container.innerHTML = `<div class="empty-state"><div class="icon">⏳</div><p>Memuat rating...</p></div>`;
+    // Kalau belum ada cache, tampilkan skeleton
+    if (!cacheValid('reviews')) {
+      container.innerHTML = [1,2,3].map(skeletonCard).join('');
+    }
     const reviews   = await loadReviews();
     const filtered  = currentFilter === 'semua' ? reviews
       : currentFilter === '5' ? reviews.filter(r => r.bintang === 5)
@@ -1161,10 +1178,15 @@
   async function sendReply(id) {
     const val = document.getElementById('ri-'+id).value.trim();
     if (!val) return showToast('⚠️ Tulis balasan dulu!', '#e74c3c');
-    showToast('⏳ Mengirim balasan...', '#1d6fa4');
     const reviews = await loadReviews();
     const idx = reviews.findIndex(r => r.id === id);
-    if (idx > -1) { reviews[idx].reply = val; await saveReviews(reviews); showToast('✅ Balasan terkirim!'); renderReviews(); }
+    if (idx > -1) {
+      reviews[idx].reply = val;
+      setCache('reviews', reviews); // optimistic update cache
+      saveReviews(reviews); // background
+      showToast('✅ Balasan terkirim!');
+      renderReviews();
+    }
   }
 
   // ── LEADERBOARD ──
@@ -1183,7 +1205,16 @@
   }
   async function renderLeaderboard() {
     const el = document.getElementById('leaderboard-content');
-    el.innerHTML = `<div class="empty-state"><div class="icon">⏳</div><p>Memuat leaderboard...</p></div>`;
+    if (!cacheValid('reviews')) {
+      el.innerHTML = `<div style="padding:20px 0">${[1,2,3].map(()=>`
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)">
+          <div class="skel" style="width:32px;height:32px;border-radius:50%"></div>
+          <div class="skel" style="width:32px;height:32px;border-radius:50%"></div>
+          <div style="flex:1"><div class="skel" style="width:50%;height:13px;border-radius:6px;margin-bottom:6px"></div>
+          <div class="skel" style="width:30%;height:10px;border-radius:6px"></div></div>
+          <div class="skel" style="width:50px;height:20px;border-radius:6px"></div>
+        </div>`).join('')}</div>`;
+    }
     const data = await computeLeaderboard();
     if (data.length === 0) {
       el.innerHTML = `<div class="empty-state"><div class="icon">🏆</div><p>Belum ada data rating.</p></div>`;
@@ -1330,30 +1361,28 @@
     const inputId = 'input-new-driver-' + tab;
     const val     = document.getElementById(inputId).value.trim();
     if (!val) return showToast('⚠️ Nama driver wajib diisi!', '#e74c3c');
-    // Invalidate cache drivers dulu agar dapat data terbaru
-    _cache.drivers = null;
+    // Optimistic: ambil dari cache, langsung update UI
+    invalidateCache('drivers');
     const drivers = await loadDrivers(server);
     if (drivers.includes(val)) return showToast('⚠️ Nama driver sudah ada!', '#e74c3c');
     drivers.push(val);
-    showToast('⏳ Menyimpan...', '#1d6fa4');
-    await saveDrivers(server, drivers);
     document.getElementById(inputId).value = '';
+    saveDrivers(server, drivers); // background, tidak perlu await
     await refreshAllDropdowns();
     await renderDriverListAdmin(tab);
-    await updateStats(null);
+    updateStats(null);
     showToast('✅ Driver berhasil ditambahkan!');
   }
 
   async function removeDriver(tab, idx) {
     const server  = tab === 'mk' ? 'Mandalika' : 'Nexotis';
-    _cache.drivers = null;
+    invalidateCache('drivers');
     const drivers = await loadDrivers(server);
     drivers.splice(idx, 1);
-    showToast('⏳ Menghapus...', '#1d6fa4');
-    await saveDrivers(server, drivers);
+    saveDrivers(server, drivers); // background
     await refreshAllDropdowns();
     await renderDriverListAdmin(tab);
-    await updateStats(null);
+    updateStats(null);
     showToast('🗑️ Driver berhasil dihapus!');
   }
 
@@ -1433,7 +1462,9 @@
   }
   async function confirmDelete() {
     const reviews = await loadReviews();
-    await saveReviews(reviews.filter(r => r.id !== pendingDeleteId));
+    const filtered = reviews.filter(r => r.id !== pendingDeleteId);
+    setCache('reviews', filtered); // optimistic
+    saveReviews(filtered); // background
     closeModal();
     showToast('🗑️ Rating berhasil dihapus!');
     renderReviews();
@@ -1477,11 +1508,13 @@
   }
 
   async function togglePanelLock(panel) {
-    _cache.locks = null;
-    const locks  = await loadLocks();
+    // Optimistic: langsung update cache dan UI
+    invalidateCache('locks');
+    const locks = await loadLocks();
     locks[panel] = !locks[panel];
-    await saveLocks(locks);
-    await applyLocks();
+    setCache('locks', locks);
+    saveLocks(locks); // background
+    applyLocks(); // tidak perlu await karena sudah pakai cache
     const server = panel === 'mk' ? 'Mandalika' : 'Nexotis';
     showToast(locks[panel] ? '🔒 ' + server + ' dikunci!' : '🔓 ' + server + ' dibuka!');
   }
