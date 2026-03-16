@@ -1361,13 +1361,29 @@
 
   function applyLocks() {
     const locks = loadLocks();
+    const bothLocked = locks['mk'] && locks['nx'];
+
     ['mk', 'nx'].forEach(panel => {
-      const overlay = document.getElementById('lock-' + panel);
-      const btn     = document.getElementById('btn-lock-' + panel);
-      const server  = panel === 'mk' ? 'Mandalika' : 'Nexotis';
+      const overlay  = document.getElementById('lock-' + panel);
+      const titleEl  = overlay ? overlay.querySelector('.lock-title') : null;
+      const iconEl   = overlay ? overlay.querySelector('.lock-icon') : null;
+      const subEl    = overlay ? overlay.querySelector('.lock-sub') : null;
+      const btn      = document.getElementById('btn-lock-' + panel);
+      const server   = panel === 'mk' ? 'Mandalika' : 'Nexotis';
+      const other    = panel === 'mk' ? 'Nexotis' : 'Mandalika';
       if (!overlay) return;
+
       if (locks[panel]) {
         overlay.classList.add('visible');
+        if (bothLocked) {
+          if (iconEl)  iconEl.textContent  = '😴';
+          if (titleEl) titleEl.innerHTML   = 'Driver Tidak Lagi<br>Di Kota, Lagi Istirahat';
+          if (subEl)   subEl.textContent   = 'Coba lagi nanti';
+        } else {
+          if (iconEl)  iconEl.textContent  = '🔒';
+          if (titleEl) titleEl.innerHTML   = 'Driver Sedang Di<br>Kota ' + other;
+          if (subEl)   subEl.textContent   = 'Coba lagi nanti';
+        }
         if (btn) { btn.textContent = '🔒 ' + server; btn.style.opacity = '0.7'; }
       } else {
         overlay.classList.remove('visible');
