@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rating Opang | Warung Bacot RP</title>
+<link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #f5ead6;
+    --bg2:      #ede0c4;
+    --surface:  #fffdf7;
+    --surface2: #f9f2e3;
+    --border:   #d9c9a3;
+    --border2:  #c9b48a;
+    --accent:   #d4420a;
+    --accent2:  #b83508;
+    --yellow:   #f5b800;
+    --blue:     #1d6fa4;
+    --green:    #2a7d4f;
+    --mk-green: #39e03a;
+    --mk-dark:  #0d1f0d;
+    --nx-pink:  #c9518a;
+    --nx-dark:  #2a0a1f;
+    --red:      #c0392b;
+    --text:     #2b1d0e;
+    --muted:    #8a6d45;
+    --radius:   12px;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Nunito', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(212,66,10,0.04) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(245,184,0,0.06) 0%, transparent 50%),
+      url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c9b48a' fill-opacity='0.12'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    pointer-events: none; z-index: 0;
+  }
+
+  .container { max-width: 900px; margin: 0 auto; padding: 0 16px; position: relative; z-index: 1; }
+
+  /* ── BANNER ── */
+  .banner-wrap {
+    width: 100%; max-height: 220px; overflow: hidden;
+    position: relative; border-bottom: 4px solid var(--accent);
+  }
+  .banner-wrap img { width:100%; object-fit:cover; object-position:center top; display:block; }
+  .banner-overlay { position:absolute; inset:0; background:linear-gradient(to bottom, transparent 40%, rgba(245,234,214,0.95) 100%); }
+
+  /* ── HEADER ── */
+  header { padding: 0 16px 0; text-align: center; position: relative; }
+  .warung-sign {
+    display:inline-block; background:var(--accent); color:#fff;
+    font-family:'Lilita One',cursive; font-size:11px; letter-spacing:3px; text-transform:uppercase;
+    padding:6px 20px; border-radius:0 0 12px 12px; margin-bottom:16px;
+    box-shadow:0 4px 12px rgba(212,66,10,0.3);
+  }
+  .hero-title {
+    font-family:'Lilita One',cursive; font-size:clamp(52px,11vw,100px);
+    line-height:0.95; color:var(--accent);
+    text-shadow:4px 4px 0 #b83508, 8px 8px 0 rgba(184,53,8,0.2);
+    margin-bottom:4px;
+  }
+  .hero-sub { font-family:'Lilita One',cursive; font-size:clamp(14px,3vw,22px); color:var(--muted); letter-spacing:3px; margin-bottom:20px; }
+
+  .driver-info {
+    display:flex; align-items:center; justify-content:center; margin:0 0 20px;
+    background:var(--surface); border:2px solid var(--border2);
+    border-radius:14px; overflow:hidden;
+    box-shadow:0 4px 16px rgba(43,29,14,0.1);
+  }
+  .driver-stat { flex:1; text-align:center; padding:14px 8px; border-right:1px solid var(--border); }
+  .driver-stat:last-child { border-right:none; }
+  .driver-stat .num { font-family:'Lilita One',cursive; font-size:30px; color:var(--accent); line-height:1; }
+  .driver-stat .lbl { font-size:10px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; font-weight:700; margin-top:2px; }
+
+  .safety-note {
+    background:#eaf7ee; border:2px solid #a8d5b5; border-radius:var(--radius);
+    padding:12px 18px; display:flex; align-items:flex-start; gap:10px;
+    margin:0 0 24px; font-size:13px; color:#2a6040; line-height:1.5;
+  }
+  .safety-note .icon { font-size:18px; flex-shrink:0; margin-top:1px; }
+
+  /* ── TABS ── */
+  .tabs {
+    display:flex; gap:3px; background:var(--bg2); border:2px solid var(--border2);
+    border-radius:14px; padding:4px; margin-bottom:24px;
+    overflow-x:auto; scrollbar-width:none;
+    box-shadow:inset 0 2px 4px rgba(0,0,0,0.06);
+  }
+  .tabs::-webkit-scrollbar { display:none; }
+  .tab-btn {
+    flex:1; min-width:max-content; padding:10px 14px; border:none;
+    background:transparent; color:var(--muted);
+    font-family:'Nunito',sans-serif; font-size:13px; font-weight:800;
+    border-radius:10px; cursor:pointer; white-space:nowrap; transition:all 0.2s;
+  }
+  .tab-btn.active { background:var(--accent); color:#fff; box-shadow:0 3px 10px rgba(212,66,10,0.35); }
+  .tab-btn:hover:not(.active) { background:rgba(212,66,10,0.08); color:var(--accent); }
+
+  .tab-panel { display:none; animation:fadeUp 0.3s ease; }
+  .tab-panel.active { display:block; }
+
+  @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes floatCrown { 0%,100% { transform:translateX(-50%) translateY(0); } 50% { transform:translateX(-50%) translateY(-5px); } }
+  @keyframes panelGlow { 0%,100% { box-shadow: var(--panel-glow); } 50% { box-shadow: var(--panel-glow-pulse); } }
+
+  /* ══════════════════════════════════════
+     SERVER PANELS  
+  ══════════════════════════════════════ */
+  .server-panels-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    margin-bottom: 6px;
+  }
+  @media (max-width: 640px) {
+    .server-panels-grid { grid-template-columns: 1fr; }
+  }
+
+  .server-panel {
+    border-radius: 20px;
+    overflow: visible;
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s;
+    border: 3px solid transparent;
+  }
+
+  /* ── Panel: Mandalika ── */
+  .server-panel.mandalika {
+    background: linear-gradient(160deg, #0d1f0d 0%, #122b12 40%, #1a3a1a 100%);
+    border-color: #2a4a2a;
+    --panel-glow: 0 8px 32px rgba(57,224,58,0.15), inset 0 1px 0 rgba(57,224,58,0.1);
+    --panel-glow-pulse: 0 12px 40px rgba(57,224,58,0.3), inset 0 1px 0 rgba(57,224,58,0.2);
+    box-shadow: var(--panel-glow);
+  }
+  .server-panel.mandalika.active-panel {
+    border-color: var(--mk-green);
+    box-shadow: 0 0 0 2px var(--mk-green), 0 16px 48px rgba(57,224,58,0.4);
+    transform: translateY(-3px);
+  }
+  .server-panel.mandalika:hover { transform: translateY(-2px); box-shadow: 0 12px 36px rgba(57,224,58,0.25); }
+  .server-panel.mandalika.active-panel:hover { transform: translateY(-3px); }
+
+  /* ── Panel: Nexotis ── */
+  .server-panel.nexotis {
+    background: linear-gradient(160deg, #1a0512 0%, #2d0a20 40%, #3d0e2c 100%);
+    border-color: #4a1a36;
+    --panel-glow: 0 8px 32px rgba(201,81,138,0.15), inset 0 1px 0 rgba(201,81,138,0.1);
+    --panel-glow-pulse: 0 12px 40px rgba(201,81,138,0.3), inset 0 1px 0 rgba(201,81,138,0.2);
+    box-shadow: var(--panel-glow);
+  }
+  .server-panel.nexotis.active-panel {
+    border-color: var(--nx-pink);
+    box-shadow: 0 0 0 2px var(--nx-pink), 0 16px 48px rgba(201,81,138,0.4);
+    transform: translateY(-3px);
+  }
+  .server-panel.nexotis:hover { transform: translateY(-2px); box-shadow: 0 12px 36px rgba(201,81,138,0.25); }
+  .server-panel.nexotis.active-panel:hover { transform: translateY(-3px); }
+
+  /* Panel header (logo area) */
+  .panel-header {
+    position: relative;
+    padding: 28px 20px 24px;
+    text-align: center;
+    overflow: hidden;
+    border-radius: 17px 17px 0 0;
+    z-index: 1;
+  }
+  .mandalika .panel-header {
+    background: linear-gradient(135deg, #0d2e0d 0%, #1a4a1a 100%);
+    border-bottom: 3px solid rgba(57,224,58,0.3);
+  }
+  .nexotis .panel-header {
+    background: linear-gradient(135deg, #1a0512 0%, #3d0e2c 100%);
+    border-bottom: 3px solid rgba(201,81,138,0.3);
+  }
+  .panel-server-label { position: relative; z-index: 2; }
+  .panel-server-icon { font-size: 36px; margin-bottom: 8px; display: block; }
+  .panel-server-name {
+    font-family: 'Lilita One', cursive;
+    font-size: 28px;
+    letter-spacing: 2px;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .mandalika .panel-server-name { color: var(--mk-green); text-shadow: 0 0 20px rgba(57,224,58,0.5); }
+  .nexotis  .panel-server-name  { color: var(--nx-pink);  text-shadow: 0 0 20px rgba(201,81,138,0.5); }
+  .panel-server-sub {
+    font-size: 11px; font-weight: 800; letter-spacing: 4px;
+    text-transform: uppercase; opacity: 0.6; color: #fff;
+  }
+  /* BG glow behind logo */
+  .panel-header::before {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 200px; height: 200px;
+    border-radius: 50%;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .mandalika .panel-header::before { background: radial-gradient(circle, rgba(57,224,58,0.2) 0%, transparent 70%); }
+  .nexotis .panel-header::before { background: radial-gradient(circle, rgba(201,81,138,0.25) 0%, transparent 70%); }
+
+  .panel-logo {
+    width: 100%;
+    max-height: 120px;
+    object-fit: contain;
+    position: relative;
+    z-index: 1;
+    filter: drop-shadow(0 4px 16px rgba(0,0,0,0.5));
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .server-panel:hover .panel-logo { transform: scale(1.05); }
+  .server-panel.active-panel .panel-logo { transform: scale(1.08); }
+
+  /* Active badge */
+  .panel-active-badge {
+    display: none;
+    position: absolute;
+    top: 12px; right: 12px;
+    font-size: 10px; font-weight: 800;
+    letter-spacing: 1px; text-transform: uppercase;
+    padding: 4px 10px; border-radius: 50px;
+  }
+  .mandalika .panel-active-badge { background: var(--mk-green); color: #0d1f0d; }
+  .nexotis  .panel-active-badge { background: var(--nx-pink);  color: #fff; }
+  .active-panel .panel-active-badge { display: block; }
+
+  /* Select indicator */
+  .panel-select-hint {
+    text-align: center;
+    padding: 8px 16px 12px;
+    font-size: 12px; font-weight: 800; letter-spacing: 1px;
+    text-transform: uppercase; transition: color 0.2s;
+  }
+  .mandalika .panel-select-hint { color: rgba(57,224,58,0.5); }
+  .nexotis  .panel-select-hint { color: rgba(201,81,138,0.5); }
+  .mandalika.active-panel .panel-select-hint { color: var(--mk-green); }
+  .nexotis.active-panel  .panel-select-hint { color: var(--nx-pink); }
+
+  /* ── FORM AREA ── */
+  .panel-form-area {
+    display: none;
+    padding: 0 16px 20px;
+    animation: fadeUp 0.3s ease;
+    position: relative;
+    z-index: 10;
+  }
+  .active-panel .panel-form-area { display: block; }
+
+  /* divider inside panel */
+  .panel-divider {
+    height: 1px; margin: 0 0 18px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  }
+  .mandalika .panel-divider { background: linear-gradient(90deg, transparent, rgba(57,224,58,0.3), transparent); }
+  .nexotis  .panel-divider { background: linear-gradient(90deg, transparent, rgba(201,81,138,0.3), transparent); }
+
+  /* Form elements inside dark panels */
+  .panel-form-area label {
+    color: rgba(255,255,255,0.5);
+    font-size: 11px; font-weight: 800;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    display: block; margin-bottom: 7px;
+  }
+  .panel-form-area input,
+  .panel-form-area textarea {
+    background: rgba(255,255,255,0.07);
+    border: 2px solid rgba(255,255,255,0.12);
+    color: #fff; border-radius: 10px;
+    font-family: 'Nunito', sans-serif; font-size: 15px; padding: 11px 15px;
+    width: 100%; outline: none; transition: border-color 0.2s, background 0.2s;
+  }
+  .panel-form-area input::placeholder,
+  .panel-form-area textarea::placeholder { color: rgba(255,255,255,0.3); }
+  .panel-form-area textarea { resize: vertical; min-height: 80px; }
+
+  .mandalika .panel-form-area input:focus,
+  .mandalika .panel-form-area textarea:focus {
+    border-color: var(--mk-green);
+    background: rgba(57,224,58,0.07);
+    box-shadow: 0 0 0 3px rgba(57,224,58,0.15);
+  }
+  .nexotis .panel-form-area input:focus,
+  .nexotis .panel-form-area textarea:focus {
+    border-color: var(--nx-pink);
+    background: rgba(201,81,138,0.07);
+    box-shadow: 0 0 0 3px rgba(201,81,138,0.15);
+  }
+
+  .panel-form-group { margin-bottom: 14px; }
+
+  /* Custom select inside panel */
+  .panel-form-area .cs-trigger {
+    background: rgba(255,255,255,0.07);
+    border: 2px solid rgba(255,255,255,0.12);
+    border-radius: 10px; color: #fff;
+  }
+  .panel-form-area .cs-arrow {
+    color: rgba(255,255,255,0.7);
+    font-size: 15px;
+  }
+  .panel-form-area .custom-select.open .cs-arrow { color: rgba(255,255,255,0.95); }
+  .mandalika .panel-form-area .custom-select.open .cs-arrow { color: var(--mk-green); }
+  .nexotis  .panel-form-area .custom-select.open .cs-arrow  { color: var(--nx-pink);  }
+  .mandalika .panel-form-area .custom-select.open .cs-trigger,
+  .mandalika .panel-form-area .cs-trigger:hover {
+    border-color: var(--mk-green); box-shadow: 0 0 0 3px rgba(57,224,58,0.15);
+  }
+  .nexotis .panel-form-area .custom-select.open .cs-trigger,
+  .nexotis .panel-form-area .cs-trigger:hover {
+    border-color: var(--nx-pink); box-shadow: 0 0 0 3px rgba(201,81,138,0.15);
+  }
+  .panel-form-area .cs-value { color: #fff; }
+  .panel-form-area .cs-value.placeholder { color: rgba(255,255,255,0.3); }
+  .panel-form-area .cs-dropdown {
+    background: #1a1a2e; border: 2px solid rgba(255,255,255,0.15);
+  }
+  .mandalika .panel-form-area .cs-dropdown { border-color: rgba(57,224,58,0.3); }
+  .nexotis  .panel-form-area .cs-dropdown { border-color: rgba(201,81,138,0.3); }
+  .panel-form-area .cs-option { color: rgba(255,255,255,0.8); }
+  .mandalika .panel-form-area .cs-option:hover,
+  .mandalika .panel-form-area .cs-option.selected { background: rgba(57,224,58,0.12); color: var(--mk-green); }
+  .nexotis .panel-form-area .cs-option:hover,
+  .nexotis .panel-form-area .cs-option.selected { background: rgba(201,81,138,0.12); color: var(--nx-pink); }
+  .panel-form-area .cs-empty { color: rgba(255,255,255,0.4); }
+
+  /* Stars in panel */
+  .panel-form-area .star-row { display:flex; gap:6px; margin-bottom:6px; }
+  .panel-form-area .star {
+    font-size:30px; cursor:pointer; user-select:none;
+    filter: grayscale(1) brightness(0.4);
+    transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1), filter 0.15s;
+  }
+  .panel-form-area .star.lit { filter:none; transform:scale(1.15); }
+  .panel-form-area .star:hover { filter:none; transform:scale(1.25); }
+  .panel-form-area .star-label { font-size:12px; font-weight:800; height:18px; transition:color 0.2s; }
+  .mandalika .panel-form-area .star-label { color: rgba(57,224,58,0.6); }
+  .nexotis  .panel-form-area .star-label { color: rgba(201,81,138,0.6); }
+
+  /* Submit btn per server */
+  .btn-submit-panel {
+    width:100%; padding:14px; border:none; border-radius:12px;
+    font-family:'Lilita One',cursive; font-size:19px; letter-spacing:1px;
+    cursor:pointer; margin-top:6px; transition:all 0.15s;
+  }
+  .mandalika .btn-submit-panel {
+    background: var(--mk-green); color: #0d1f0d;
+    box-shadow: 0 4px 0 #1e7a1f, 0 6px 20px rgba(57,224,58,0.35);
+  }
+  .mandalika .btn-submit-panel:hover {
+    background: #4df54e; transform:translateY(-2px);
+    box-shadow: 0 6px 0 #1e7a1f, 0 10px 28px rgba(57,224,58,0.45);
+  }
+  .nexotis .btn-submit-panel {
+    background: var(--nx-pink); color: #fff;
+    box-shadow: 0 4px 0 #8a2e5e, 0 6px 20px rgba(201,81,138,0.4);
+  }
+  .nexotis .btn-submit-panel:hover {
+    background: #d96899; transform:translateY(-2px);
+    box-shadow: 0 6px 0 #8a2e5e, 0 10px 28px rgba(201,81,138,0.5);
+  }
+  .btn-submit-panel:active { transform:translateY(2px); }
+
+  /* ── SHARED FORM (nama IC) ── */
+  .shared-form-card {
+    background: var(--surface); border: 2px solid var(--border);
+    border-radius: 16px; padding: 20px; margin-bottom: 18px;
+    box-shadow: 0 4px 16px rgba(43,29,14,0.08);
+  }
+  .shared-form-card label {
+    font-size:11px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase;
+    color:var(--muted); display:block; margin-bottom:7px;
+  }
+  .shared-form-card input {
+    width:100%; background:var(--surface2); border:2px solid var(--border);
+    border-radius:10px; color:var(--text);
+    font-family:'Nunito',sans-serif; font-size:15px; padding:11px 15px;
+    outline:none; transition:border-color 0.2s, box-shadow 0.2s;
+  }
+  .shared-form-card input:focus {
+    border-color:var(--accent); box-shadow:0 0 0 3px rgba(212,66,10,0.1);
+  }
+  .shared-form-card input::placeholder { color:#b8a07a; }
+  .shared-form-card .hint {
+    font-size: 12px; color: var(--muted); font-weight: 700;
+    margin-top: 8px; text-align: center;
+  }
+
+  /* ── CARD (shared for other tabs) ── */
+  .card {
+    background:var(--surface); border:2px solid var(--border);
+    border-radius:16px; padding:24px; margin-bottom:18px;
+    box-shadow:0 4px 16px rgba(43,29,14,0.08);
+  }
+  .card-title {
+    font-family:'Lilita One',cursive; font-size:20px; letter-spacing:0.5px;
+    color:var(--accent); margin-bottom:20px;
+    display:flex; align-items:center; gap:8px;
+    padding-bottom:14px; border-bottom:2px dashed var(--border);
+  }
+  .form-group { margin-bottom:16px; }
+  label {
+    display:block; font-size:11px; font-weight:800;
+    letter-spacing:1.5px; text-transform:uppercase;
+    color:var(--muted); margin-bottom:7px;
+  }
+  input, select, textarea {
+    width:100%; background:var(--surface2); border:2px solid var(--border);
+    border-radius:10px; color:var(--text);
+    font-family:'Nunito',sans-serif; font-size:15px; padding:11px 15px;
+    outline:none; transition:border-color 0.2s, box-shadow 0.2s;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color:var(--accent); box-shadow:0 0 0 3px rgba(212,66,10,0.1); background:#fffdf7;
+  }
+  select option { background:#fffdf7; }
+  textarea { resize:vertical; min-height:90px; }
+  input::placeholder, textarea::placeholder { color:#b8a07a; }
+
+  .btn-submit {
+    width:100%; padding:15px; background:var(--accent); border:none;
+    border-radius:12px; color:#fff; font-family:'Lilita One',cursive;
+    font-size:20px; letter-spacing:1px; cursor:pointer; margin-top:4px;
+    box-shadow:0 4px 0 var(--accent2), 0 6px 16px rgba(212,66,10,0.3);
+    transition:all 0.15s;
+  }
+  .btn-submit:hover { background:var(--accent2); transform:translateY(-2px); }
+  .btn-submit:active { transform:translateY(2px); }
+
+  .filter-row { display:flex; gap:8px; margin-bottom:18px; flex-wrap:wrap; }
+  .filter-chip {
+    padding:7px 16px; border-radius:50px; border:2px solid var(--border);
+    background:var(--surface); color:var(--muted);
+    font-family:'Nunito',sans-serif; font-size:13px; font-weight:800;
+    cursor:pointer; transition:all 0.2s; white-space:nowrap;
+  }
+  .filter-chip.active, .filter-chip:hover { border-color:var(--accent); color:var(--accent); background:rgba(212,66,10,0.06); }
+
+  .review-card {
+    background:var(--surface); border:2px solid var(--border); border-radius:14px;
+    padding:18px 20px; margin-bottom:12px;
+    transition:border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+    animation:fadeUp 0.3s ease both;
+    box-shadow:0 2px 8px rgba(43,29,14,0.06);
+  }
+  .review-card:hover { border-color:var(--border2); transform:translateY(-2px); box-shadow:0 6px 20px rgba(43,29,14,0.12); }
+
+  .review-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:10px; flex-wrap:wrap; gap:8px; }
+  .review-header-left { display:flex; align-items:flex-start; gap:12px; }
+  .avatar { border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'Lilita One',cursive; color:#fff; flex-shrink:0; box-shadow:0 3px 8px rgba(0,0,0,0.2); }
+  .reviewer-name { font-weight:900; font-size:15px; }
+  .review-meta { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:4px; }
+  .server-tag { font-size:10px; font-weight:800; letter-spacing:1px; padding:3px 10px; border-radius:50px; text-transform:uppercase; }
+  .server-tag.mandalika { background:rgba(57,224,58,0.1); color:#27ae60; border:2px solid rgba(57,224,58,0.25); }
+  .server-tag.nexotis   { background:rgba(201,81,138,0.1); color:var(--nx-pink); border:2px solid rgba(201,81,138,0.25); }
+  .driver-tag { font-size:10px; font-weight:800; padding:3px 10px; border-radius:50px; background:rgba(212,66,10,0.08); border:2px solid rgba(212,66,10,0.2); color:var(--accent); }
+  .review-date  { font-size:11px; color:var(--muted); font-weight:700; }
+  .stars-display { font-size:17px; margin-bottom:8px; }
+  .review-text  { font-size:14px; color:#5a3e28; line-height:1.6; font-weight:600; }
+
+  .reply-section { margin-top:14px; }
+  .reply-box { background:#fef9f0; border:2px solid rgba(212,66,10,0.2); border-left:4px solid var(--accent); border-radius:10px; padding:12px 16px; margin-bottom:8px; }
+  .reply-box-driver { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+  .reply-driver-name { font-weight:900; font-size:14px; color:var(--accent); }
+  .reply-driver-sub { display:flex; align-items:center; gap:6px; margin-top:2px; }
+  .admin-badge { font-size:10px; font-weight:800; color:var(--yellow); background:rgba(245,184,0,0.15); border:1px solid rgba(245,184,0,0.4); padding:2px 8px; border-radius:50px; }
+  .reply-text-body { font-size:14px; color:#5a3e28; line-height:1.6; font-weight:600; }
+  .reply-form { display:none; margin-top:8px; }
+  .reply-form.open { display:block; }
+  .reply-form-header { display:flex; align-items:center; gap:8px; margin-bottom:8px; font-size:12px; color:var(--accent); font-weight:800; }
+  .reply-input { flex:1; min-width:180px; padding:10px 14px; font-size:14px; }
+  .btn-reply-toggle { background:rgba(212,66,10,0.06); border:2px solid rgba(212,66,10,0.2); border-radius:8px; color:var(--accent); font-family:'Nunito',sans-serif; font-size:12px; font-weight:800; padding:5px 12px; cursor:pointer; transition:all 0.2s; }
+  .btn-reply-toggle:hover { background:rgba(212,66,10,0.12); }
+  .btn-reply-send { padding:10px 20px; background:var(--accent); border:none; border-radius:9px; color:#fff; font-family:'Nunito',sans-serif; font-weight:800; font-size:13px; cursor:pointer; transition:background 0.2s; white-space:nowrap; margin-top:8px; }
+  .btn-reply-send:hover { background:var(--accent2); }
+  .btn-delete { background:transparent; border:2px solid rgba(192,57,43,0.25); border-radius:8px; color:var(--red); font-family:'Nunito',sans-serif; font-size:12px; font-weight:800; padding:5px 12px; cursor:pointer; transition:all 0.2s; margin-left:6px; }
+  .btn-delete:hover { background:rgba(192,57,43,0.08); border-color:var(--red); }
+
+  .leaderboard-podium { display:flex; justify-content:center; align-items:flex-end; gap:12px; margin:24px 0 28px; flex-wrap:wrap; }
+  .podium-item { display:flex; flex-direction:column; align-items:center; gap:8px; animation:fadeUp 0.4s ease both; }
+  .podium-item:nth-child(1) { animation-delay:0.1s; }
+  .podium-item:nth-child(2) { animation-delay:0s; }
+  .podium-item:nth-child(3) { animation-delay:0.2s; }
+  .podium-avatar-wrap { position:relative; }
+  .podium-crown { position:absolute; top:-22px; left:50%; transform:translateX(-50%); font-size:22px; animation:floatCrown 2.5s ease-in-out infinite; }
+  .podium-avatar-inner { border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'Lilita One',cursive; color:#fff; box-shadow:0 6px 20px rgba(0,0,0,0.2); cursor:default; transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1); }
+  .podium-avatar-inner:hover { transform:scale(1.08); }
+  .podium-name  { font-weight:900; font-size:13px; text-align:center; max-width:90px; word-break:break-word; }
+  .podium-stars { font-size:13px; color:var(--accent); font-weight:800; }
+  .podium-count { font-size:11px; color:var(--muted); font-weight:700; }
+  .podium-block { border-radius:10px 10px 0 0; width:80px; display:flex; align-items:center; justify-content:center; font-size:24px; }
+  .lb-list { display:flex; flex-direction:column; gap:8px; }
+  .lb-row { display:flex; align-items:center; gap:12px; background:var(--surface2); border:2px solid var(--border); border-radius:12px; padding:12px 16px; transition:border-color 0.2s, transform 0.2s; animation:fadeUp 0.3s ease both; font-weight:700; }
+  .lb-row:hover { border-color:var(--border2); transform:translateX(3px); }
+  .lb-rank { font-family:'Lilita One',cursive; font-size:22px; color:var(--muted); min-width:28px; text-align:center; }
+  .lb-rank.gold { color:#d4920a; } .lb-rank.silver { color:#888; } .lb-rank.bronze { color:#a0522d; }
+  .lb-info { flex:1; } .lb-name { font-weight:900; font-size:15px; } .lb-sub { font-size:12px; color:var(--muted); margin-top:2px; font-weight:700; }
+  .lb-score { text-align:right; } .lb-avg { font-family:'Lilita One',cursive; font-size:26px; color:var(--accent); line-height:1; } .lb-total { font-size:11px; color:var(--muted); font-weight:700; }
+
+  .modal-overlay { position:fixed; inset:0; background:rgba(43,29,14,0.6); backdrop-filter:blur(4px); z-index:100; display:none; align-items:center; justify-content:center; }
+  .modal-overlay.open { display:flex; }
+  .modal { background:var(--surface); border:3px solid var(--border2); border-radius:18px; padding:28px; width:100%; max-width:380px; margin:20px; animation:fadeUp 0.25s ease; box-shadow:0 20px 60px rgba(43,29,14,0.3); }
+  .modal-title  { font-family:'Lilita One',cursive; font-size:22px; color:var(--red); margin-bottom:6px; }
+  .modal-sub    { font-size:13px; color:var(--muted); margin-bottom:18px; font-weight:700; line-height:1.5; }
+  .modal-actions { display:flex; gap:8px; margin-top:16px; }
+  .btn-modal-cancel  { flex:1; padding:12px; background:var(--surface2); border:2px solid var(--border); border-radius:10px; color:var(--muted); font-family:'Nunito',sans-serif; font-size:14px; font-weight:800; cursor:pointer; transition:all 0.2s; }
+  .btn-modal-cancel:hover { border-color:var(--border2); color:var(--text); }
+  .btn-modal-confirm { flex:1; padding:12px; background:var(--red); border:none; border-radius:10px; color:#fff; font-family:'Nunito',sans-serif; font-weight:800; font-size:14px; cursor:pointer; }
+  .btn-modal-confirm:hover { background:#a93226; }
+
+  .custom-select { position:relative; user-select:none; }
+  .cs-trigger { display:flex; align-items:center; justify-content:space-between; background:var(--surface2); border:2px solid var(--border); border-radius:10px; padding:11px 15px; cursor:pointer; transition:border-color 0.2s, box-shadow 0.2s; min-height:46px; }
+  .custom-select.open .cs-trigger, .cs-trigger:hover { border-color:var(--accent); box-shadow:0 0 0 3px rgba(212,66,10,0.1); }
+  .cs-value { font-family:'Nunito',sans-serif; font-size:15px; color:var(--text); display:flex; align-items:center; gap:10px; flex:1; font-weight:700; }
+  .cs-value.placeholder { color:#b8a07a; font-weight:600; }
+  .cs-arrow { color:var(--muted); font-size:13px; transition:transform 0.25s; flex-shrink:0; }
+  .custom-select.open .cs-arrow { transform:rotate(180deg); color:var(--accent); }
+  .cs-dropdown { position:absolute; top:calc(100% + 6px); left:0; right:0; background:var(--surface); border:2px solid var(--border2); border-radius:12px; overflow:hidden; z-index:50; max-height:220px; overflow-y:auto; display:none; box-shadow:0 8px 24px rgba(43,29,14,0.15); }
+  .custom-select.open .cs-dropdown { display:block; animation:fadeUp 0.2s ease; }
+  .cs-option { display:flex; align-items:center; gap:12px; padding:12px 16px; cursor:pointer; transition:background 0.15s; font-weight:700; }
+  .cs-option:hover, .cs-option.selected { background:rgba(212,66,10,0.07); color:var(--accent); }
+  .cs-option.selected .cs-check { visibility:visible; }
+  .cs-check { visibility:hidden; margin-left:auto; color:var(--accent); font-weight:800; font-size:14px; }
+  .cs-opt-icon { font-size:18px; flex-shrink:0; } .cs-opt-label { font-size:15px; flex:1; } .cs-opt-sub { font-size:11px; color:var(--muted); font-weight:700; }
+  .cs-selected-avatar { flex-shrink:0; } .cs-empty { padding:16px; font-size:13px; color:var(--muted); text-align:center; font-weight:700; }
+
+  .empty-state { text-align:center; padding:60px 20px; color:var(--muted); }
+  .empty-state .icon { font-size:48px; margin-bottom:12px; }
+  .empty-state p { font-size:15px; font-weight:700; line-height:1.6; }
+
+  .toast { position:fixed; bottom:24px; right:16px; background:var(--accent); color:#fff; font-weight:800; font-size:14px; padding:14px 22px; border-radius:12px; box-shadow:0 8px 24px rgba(212,66,10,0.4); transform:translateY(80px); opacity:0; z-index:999; pointer-events:none; transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1); max-width:calc(100vw - 32px); border:2px solid rgba(255,255,255,0.2); }
+  .toast.show { transform:translateY(0); opacity:1; }
+
+  footer { text-align:center; padding:36px 20px 40px; color:var(--muted); font-size:13px; border-top:2px dashed var(--border); margin-top:40px; font-weight:700; }
+  footer .ft-logo { font-family:'Lilita One',cursive; font-size:18px; color:var(--accent); display:block; margin-bottom:8px; }
+
+  @media (max-width:600px) {
+    .card { padding:16px; }
+    .hero-title { font-size:56px; }
+    .podium-block { width:64px; }
+    .podium-name { max-width:72px; font-size:12px; }
+    .driver-stat .num { font-size:24px; }
+    .lb-row { padding:10px 12px; gap:10px; }
+    .banner-wrap { max-height:160px; }
+  }
+  @media (max-width:380px) {
+    .tabs { gap:2px; padding:3px; }
+    .tab-btn { font-size:11px; padding:9px 8px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="banner-wrap">
+  <img src="" alt="Warung Bacot Banner">
+  <div class="banner-overlay"></div>
+</div>
+
+<div class="container">
+  <header>
+    <div class="warung-sign">🛵 GTA SAMP Roleplay</div>
+    <div class="hero-title">OPANG<br>RATING</div>
+    <div class="hero-sub">Ojek Pangkalan · In Character</div>
+    <div class="driver-info">
+      <div class="driver-stat"><div class="num" id="stat-total">0</div><div class="lbl">Total Rating</div></div>
+      <div class="driver-stat"><div class="num" id="stat-avg">—</div><div class="lbl">Rata-rata</div></div>
+      <div class="driver-stat"><div class="num" id="stat-drivers">0</div><div class="lbl">Driver Aktif</div></div>
+    </div>
+    <div class="safety-note">
+      <span class="icon">🔒</span>
+      <span><strong>Website Aman &amp; Tidak Berbahaya</strong> — Hanya untuk rating roleplay opang. Tidak ada data sensitif. Aman untuk semua pemain.</span>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('beri-rating',this)">⭐ Beri Rating</button>
+    <button class="tab-btn"        onclick="switchTab('lihat-rating',this)">📋 Lihat Rating</button>
+    <button class="tab-btn"        onclick="switchTab('leaderboard',this)">🏆 Leaderboard</button>
+  </div>
+
+  <!-- TAB: Beri Rating -->
+  <div class="tab-panel active" id="tab-beri-rating">
+
+    <!-- Nama IC shared -->
+    <div class="shared-form-card">
+      <label>Nama IC (In Character) kamu</label>
+      <input type="text" id="input-nama" placeholder="Contoh: Budi Santoso" maxlength="40">
+      <p class="hint">👇 Pilih server di bawah lalu isi form rating</p>
+    </div>
+
+    <!-- Server Panels -->
+    <div class="server-panels-grid">
+
+      <!-- Panel Mandalika -->
+      <div class="server-panel mandalika" id="panel-mandalika" data-server="Mandalika" onclick="selectPanel('mandalika')">
+        <div class="panel-active-badge">✓ Dipilih</div>
+        <div class="panel-header">
+          <div class="panel-server-label">
+            <div class="panel-server-icon">🏝️</div>
+            <div class="panel-server-name">MANDALIKA</div>
+            <div class="panel-server-sub">ROLEPLAY</div>
+          </div>
+        </div>
+        <div class="panel-select-hint">Tap untuk pilih server ini</div>
+
+        <div class="panel-form-area">
+          <div class="panel-divider"></div>
+
+          <div class="panel-form-group">
+            <label>Nama Driver</label>
+            <div class="custom-select" id="cs-driver-mk">
+              <div class="cs-trigger" onclick="event.stopPropagation(); toggleSelect('cs-driver-mk')">
+                <span class="cs-value placeholder" data-placeholder="— Pilih Driver —">— Pilih Driver —</span>
+                <span class="cs-arrow">▾</span>
+              </div>
+              <div class="cs-dropdown" id="cs-driver-mk-list">
+                <div class="cs-empty">Belum ada driver. Minta admin tambahkan.</div>
+              </div>
+            </div>
+            <input type="hidden" id="input-driver-mk">
+          </div>
+
+          <div class="panel-form-group">
+            <label>Rating Bintang</label>
+            <div class="star-row" id="star-row-mk">
+              <span class="star" onclick="event.stopPropagation();setStarPanel('mk',1)">⭐</span>
+              <span class="star" onclick="event.stopPropagation();setStarPanel('mk',2)">⭐</span>
+              <span class="star" onclick="event.stopPropagation();setStarPanel('mk',3)">⭐</span>
+              <span class="star" onclick="event.stopPropagation();setStarPanel('mk',4)">⭐</span>
+              <span class="star" onclick="event.stopPropagation();setStarPanel('mk',5)">⭐</span>
+            </div>
+            <div class="star-label" id="star-label-mk">Klik bintang untuk memberi nilai</div>
+          </div>
+
+          <div class="panel-form-group">
+            <label>Komentar</label>
+            <textarea class="panel-alasan" id="alasan-mk" placeholder="Ceritakan pengalamanmu..." onclick="event.stopPropagation()"></textarea>
+          </div>
+
+          <button class="btn-submit-panel" onclick="event.stopPropagation();submitPanel('mk','Mandalika')">KIRIM RATING 🟢</button>
+        </div>
+      </div>
+
+      <!-- Panel Nexotis -->
+      <div class="server-panel nexotis" id="panel-nexotis" data-server="Nexotis" onclick="selectPanel('nexotis')">
+        <div class="panel-active-badge">✓ Dipilih</div>
+        <div class="panel-header">
+          <div class="panel-server-label">
+            <div class="panel-server-icon">🌆</div>
+            <div class="panel-server-name">NEXOTIS</div>
+            <div class="panel-server-sub">ROLEPLAY</div>
+          </div>
+        </div>
+        <div class="panel-select-hint">Tap untuk pilih server ini</div>
+
+        <div class="panel-form-area">
+          <div class="panel-divider"></div>
+
+          <div class="panel-form-group">
+            <label>Nama Driver</label>
+            <div class="custom-select" id="cs-driver-nx">
+              <div class="cs-trigger" onclick="event.stopPropagation(); toggleSelect('cs-driver-nx')">
+                <span class="cs-value placeholder" data-placeholder="— Pilih Driver —">— Pilih Driver —</span>
+                <span class="cs-arrow">▾</span>
+              </div>
+              <div class="cs-dropdown" id="cs-driver-nx-list">
+                <div class="cs-empty">Belum ada driver. Minta admin tambahkan.</div>
+              </div>
+            </div>
+            <input type="hidden" id="input-driver-nx">
+          </div>
+
+          <div class="panel-form-group">
+            <label>Rating Bintang</label>
+            <div class="star-row" id="star-row-nx">
+              <span class="star" onclick="event.stopPropagation();setStarPanel('nx',1)">⭐</span>
+              <span class="star" onclick="event.stopPropagation();setStarPanel('nx',2)">⭐</span>
+              <span class="star" onclick="event.stopPropagation();setStarPanel('nx',3)">⭐</span>
+              <span class="star" onclick="event.stopPropagation();setStarPanel('nx',4)">⭐</span>
+              <span class="star" onclick="event.stopPropagation();setStarPanel('nx',5)">⭐</span>
+            </div>
+            <div class="star-label" id="star-label-nx">Klik bintang untuk memberi nilai</div>
+          </div>
+
+          <div class="panel-form-group">
+            <label>Komentar</label>
+            <textarea class="panel-alasan" id="alasan-nx" placeholder="Ceritakan pengalamanmu..." onclick="event.stopPropagation()"></textarea>
+          </div>
+
+          <button class="btn-submit-panel" onclick="event.stopPropagation();submitPanel('nx','Nexotis')">KIRIM RATING 💗</button>
+        </div>
+      </div>
+
+    </div><!-- end grid -->
+
+    <!-- hidden fields for legacy JS compat -->
+    <input type="hidden" id="input-server">
+    <input type="hidden" id="input-driver">
+  </div>
+
+  <!-- TAB: Lihat Rating -->
+  <div class="tab-panel" id="tab-lihat-rating">
+    <div class="filter-row">
+      <button class="filter-chip active" onclick="filterReviews('semua',this)">Semua</button>
+      <button class="filter-chip"        onclick="filterReviews('Mandalika',this)">🏝️ Mandalika</button>
+      <button class="filter-chip"        onclick="filterReviews('Nexotis',this)">🌆 Nexotis</button>
+      <button class="filter-chip"        onclick="filterReviews('5',this)">⭐⭐⭐⭐⭐</button>
+    </div>
+
+    <div id="admin-login-bar" style="display:none;margin-bottom:16px;">
+      <div class="card" style="padding:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;border-color:rgba(212,66,10,0.3);">
+        <span style="font-size:12px;color:var(--muted);font-weight:800;letter-spacing:1px;text-transform:uppercase;">🔐 Login Admin</span>
+        <input type="password" id="admin-login-input" placeholder="Masukkan password..." style="flex:1;min-width:160px;padding:9px 14px;font-size:14px;" onkeydown="if(event.key==='Enter')doAdminLogin()">
+        <button onclick="doAdminLogin()" style="padding:9px 20px;background:var(--accent);border:none;border-radius:9px;color:#fff;font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;cursor:pointer;white-space:nowrap;box-shadow:0 3px 10px rgba(212,66,10,0.3);">Masuk</button>
+      </div>
+    </div>
+
+    <div id="admin-logged-bar" style="display:none;margin-bottom:16px;">
+      <div style="background:rgba(212,66,10,0.06);border:2px solid rgba(212,66,10,0.2);border-radius:12px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+        <span style="font-size:13px;color:var(--accent);font-weight:800;">✅ Mode Admin Aktif</span>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button onclick="toggleDriverPanel()" style="padding:6px 14px;background:rgba(212,66,10,0.1);border:2px solid rgba(212,66,10,0.3);border-radius:8px;color:var(--accent);font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;cursor:pointer;">🛵 Kelola Driver</button>
+          <button onclick="doAdminLogout()" style="padding:6px 14px;background:transparent;border:2px solid rgba(192,57,43,0.3);border-radius:8px;color:var(--red);font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;cursor:pointer;">Keluar</button>
+        </div>
+      </div>
+      <div id="driver-panel" style="display:none;background:var(--surface);border:2px solid rgba(212,66,10,0.2);border-radius:14px;padding:20px;margin-bottom:10px;">
+        <div style="font-family:'Lilita One',cursive;font-size:20px;color:var(--accent);margin-bottom:14px;">🛵 Manajemen Nama Driver</div>
+
+        <!-- Server tabs -->
+        <div style="display:flex;gap:4px;background:var(--bg2);border:2px solid var(--border2);border-radius:10px;padding:3px;margin-bottom:16px;">
+          <button id="dtab-mk" onclick="switchDriverTab('mk')" style="flex:1;padding:8px;border:none;background:#1a4a1a;color:var(--mk-green);border-radius:7px;font-family:'Nunito',sans-serif;font-weight:800;font-size:12px;cursor:pointer;">🏝️ Mandalika</button>
+          <button id="dtab-nx" onclick="switchDriverTab('nx')" style="flex:1;padding:8px;border:none;background:transparent;color:var(--muted);border-radius:7px;font-family:'Nunito',sans-serif;font-weight:800;font-size:12px;cursor:pointer;">🌆 Nexotis</button>
+        </div>
+
+        <!-- Mandalika driver form -->
+        <div id="dpanel-mk">
+          <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+            <input type="text" id="input-new-driver-mk" placeholder="Nama driver Mandalika..." maxlength="40" style="flex:1;min-width:160px;padding:10px 14px;font-size:14px;" onkeydown="if(event.key==='Enter')addDriver('mk')">
+            <button onclick="addDriver('mk')" style="padding:10px 18px;background:#39e03a;border:none;border-radius:10px;color:#0d1f0d;font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;cursor:pointer;white-space:nowrap;">+ Tambah</button>
+          </div>
+          <div id="driver-list-mk" style="display:flex;flex-direction:column;gap:6px;"></div>
+        </div>
+
+        <!-- Nexotis driver form -->
+        <div id="dpanel-nx" style="display:none;">
+          <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+            <input type="text" id="input-new-driver-nx" placeholder="Nama driver Nexotis..." maxlength="40" style="flex:1;min-width:160px;padding:10px 14px;font-size:14px;" onkeydown="if(event.key==='Enter')addDriver('nx')">
+            <button onclick="addDriver('nx')" style="padding:10px 18px;background:var(--nx-pink);border:none;border-radius:10px;color:#fff;font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;cursor:pointer;white-space:nowrap;">+ Tambah</button>
+          </div>
+          <div id="driver-list-nx" style="display:flex;flex-direction:column;gap:6px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="reviews-container"></div>
+  </div>
+
+  <!-- TAB: Leaderboard -->
+  <div class="tab-panel" id="tab-leaderboard">
+    <div class="card">
+      <div class="card-title">🏆 Leaderboard Driver Terbaik</div>
+      <div id="leaderboard-content">
+        <div class="empty-state"><div class="icon">🏆</div><p>Belum ada data rating.<br>Jadilah yang pertama memberi rating!</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-title">🗑️ Hapus Rating</div>
+    <div class="modal-sub">Apakah kamu yakin ingin menghapus rating ini? Tindakan ini tidak bisa dibatalkan.</div>
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" onclick="closeModal()">Batal</button>
+      <button class="btn-modal-confirm" onclick="confirmDelete()">🗑️ Ya, Hapus</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <span class="ft-logo">🛵 WARUNG BACOT RP</span>
+  Website ini dibuat untuk keperluan <strong>Roleplay GTA SAMP</strong> semata.<br>
+  Tidak ada data berbahaya &nbsp;·&nbsp; Hanya untuk rating opang &nbsp;🛵
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── AVATAR ──
+  const AVATAR_COLORS = [
+    '#f5a623','#e74c3c','#2ecc71','#3498db','#9b59b6',
+    '#1abc9c','#e67e22','#e91e63','#00bcd4','#8bc34a',
+    '#ff5722','#607d8b','#ff9800','#4caf50','#2196f3'
+  ];
+  function getAvatarColor(name) {
+    let h = 0;
+    for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
+    return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length];
+  }
+  function getInitials(name) {
+    return name.trim().split(/\s+/).slice(0,2).map(w => w[0].toUpperCase()).join('');
+  }
+  function avatarHtml(name, size, fsize) {
+    size  = size  || 42;
+    fsize = fsize || 16;
+    const color = getAvatarColor(name);
+    return `<div class="avatar" style="width:${size}px;height:${size}px;font-size:${fsize}px;background:${color};">${getInitials(name)}</div>`;
+  }
+
+  // ── STATE ──
+  let currentFilter = 'semua';
+  const STAR_LABELS = ['','Sangat Buruk 😤','Kurang Memuaskan 😕','Lumayan 😐','Bagus! 😊','Luar Biasa! 🔥'];
+  const panelStars  = { mk: 0, nx: 0 };
+
+  // ── STORAGE ──
+  function loadReviews()       { try { return JSON.parse(localStorage.getItem('opang_reviews')||'[]'); } catch { return []; } }
+  function saveReviews(r)      { localStorage.setItem('opang_reviews', JSON.stringify(r)); }
+  function loadDrivers(server) { try { return JSON.parse(localStorage.getItem('opang_drivers_'+server)||'[]'); } catch { return []; } }
+  function saveDrivers(server,d){ localStorage.setItem('opang_drivers_'+server, JSON.stringify(d)); }
+
+  // ── TABS ──
+  function switchTab(id, btn) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + id).classList.add('active');
+    if (btn) btn.classList.add('active');
+    if (id === 'lihat-rating') renderReviews();
+    if (id === 'leaderboard')  renderLeaderboard();
+  }
+
+  // ── PANEL SELECT ──
+  function selectPanel(server) {
+    document.querySelectorAll('.server-panel').forEach(p => p.classList.remove('active-panel'));
+    document.getElementById('panel-' + server).classList.add('active-panel');
+  }
+
+  // ── STAR RATING (panel) ──
+  function setStarPanel(panel, val) {
+    panelStars[panel] = val;
+    const row = document.getElementById('star-row-' + panel);
+    if (!row) return;
+    row.querySelectorAll('.star').forEach((s, i) => s.classList.toggle('lit', i < val));
+    const lbl = document.getElementById('star-label-' + panel);
+    if (lbl) {
+      lbl.textContent = STAR_LABELS[val];
+      lbl.style.color = panel === 'mk' ? '#39e03a' : '#c9518a';
+    }
+  }
+
+  // ── SUBMIT PANEL ──
+  function submitPanel(panel, serverName) {
+    const nama    = document.getElementById('input-nama').value.trim();
+    const driver  = document.getElementById('input-driver-' + panel).value;
+    const bintang = panelStars[panel];
+    const alasan  = document.getElementById('alasan-' + panel).value.trim();
+
+    if (!nama)    return showToast('⚠️ Nama IC wajib diisi!', '#e74c3c');
+    if (!driver)  return showToast('⚠️ Pilih nama driver dulu!', '#e74c3c');
+    if (!bintang) return showToast('⚠️ Pilih bintang dulu!', '#e74c3c');
+    if (!alasan)  return showToast('⚠️ Komentar wajib diisi!', '#e74c3c');
+
+    const reviews = loadReviews();
+    reviews.unshift({
+      id: Date.now(), nama, server: serverName, driver, bintang, alasan,
+      tanggal: new Date().toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'}),
+      reply: null
+    });
+    saveReviews(reviews);
+    updateStats(reviews);
+
+    // Reset panel form
+    document.getElementById('input-driver-' + panel).value = '';
+    document.getElementById('alasan-' + panel).value = '';
+    panelStars[panel] = 0;
+    document.getElementById('star-row-' + panel).querySelectorAll('.star').forEach(s => s.classList.remove('lit'));
+    const lbl = document.getElementById('star-label-' + panel);
+    if (lbl) { lbl.textContent = 'Klik bintang untuk memberi nilai'; lbl.style.color = ''; }
+    // reset custom select
+    const csEl = document.getElementById('cs-driver-' + panel);
+    if (csEl) {
+      const ph = csEl.querySelector('.cs-value');
+      if (ph) { ph.innerHTML = '— Pilih Driver —'; ph.classList.add('placeholder'); }
+      csEl.querySelectorAll('.cs-option').forEach(o => o.classList.remove('selected'));
+    }
+
+    showToast('✅ Rating berhasil dikirim! Terima kasih!');
+    document.querySelectorAll('.tab-btn')[1].click();
+  }
+
+  // ── RENDER REVIEWS ──
+  function renderReviews() {
+    const reviews   = loadReviews();
+    const container = document.getElementById('reviews-container');
+    const filtered  = currentFilter === 'semua' ? reviews
+      : currentFilter === '5' ? reviews.filter(r => r.bintang === 5)
+      : reviews.filter(r => r.server === currentFilter);
+
+    if (filtered.length === 0) {
+      container.innerHTML = `<div class="empty-state"><div class="icon">🛵</div><p>Belum ada rating ${currentFilter==='semua'?'sama sekali':'untuk '+currentFilter}.<br>Jadilah yang pertama!</p></div>`;
+      return;
+    }
+    container.innerHTML = filtered.map((r, idx) => `
+      <div class="review-card" id="rc-${r.id}" style="animation-delay:${idx*0.04}s">
+        <div class="review-header">
+          <div class="review-header-left">
+            ${avatarHtml(r.nama, 42, 16)}
+            <div>
+              <div class="reviewer-name">${escHtml(r.nama)}</div>
+              <div class="review-meta">
+                <span class="server-tag ${r.server.toLowerCase()}">${r.server}</span>
+                ${r.driver ? `<span class="driver-tag">🛵 ${escHtml(r.driver)}</span>` : ''}
+                <span class="review-date">${r.tanggal}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="stars-display">${'⭐'.repeat(r.bintang)}${'☆'.repeat(5-r.bintang)}</div>
+        <div class="review-text">${escHtml(r.alasan)}</div>
+        <div class="reply-section">
+          ${r.reply ? `
+            <div class="reply-box">
+              <div class="reply-box-driver">
+                ${r.driver ? avatarHtml(r.driver, 34, 13) : `<div class="avatar" style="width:34px;height:34px;font-size:13px;background:#d4420a;">OP</div>`}
+                <div>
+                  <div class="reply-driver-name">${r.driver ? escHtml(r.driver) : 'Opang'}</div>
+                  <div class="reply-driver-sub"><span class="admin-badge">👑 Admin · Driver</span></div>
+                </div>
+              </div>
+              <p class="reply-text-body">${escHtml(r.reply)}</p>
+            </div>
+            ${isAdminLoggedIn ? `<button class="btn-delete" style="margin-top:6px;" onclick="deleteReview(${r.id})">🗑️ Hapus</button>` : ''}
+          ` : `
+            ${isAdminLoggedIn ? `
+              <button class="btn-reply-toggle" onclick="toggleReplyForm(${r.id})">💬 Balas sebagai Driver</button>
+              <button class="btn-delete" onclick="deleteReview(${r.id})">🗑️ Hapus</button>
+              <div class="reply-form" id="rf-${r.id}">
+                <div class="reply-form-header">
+                  ${r.driver ? avatarHtml(r.driver, 28, 10) : ''}
+                  <span style="font-size:12px;color:var(--accent);font-weight:800;">${r.driver ? escHtml(r.driver) : 'Opang'} membalas...</span>
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                  <input class="reply-input" id="ri-${r.id}" placeholder="Tulis balasan sebagai driver..." maxlength="300" style="flex:1;min-width:160px;">
+                  <button class="btn-reply-send" onclick="sendReply(${r.id})">Kirim</button>
+                </div>
+              </div>
+            ` : ''}
+          `}
+        </div>
+      </div>
+    `).join('');
+    updateStats(reviews);
+  }
+
+  function filterReviews(val, el) {
+    currentFilter = val;
+    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    renderReviews();
+  }
+
+  // ── REPLY ──
+  function toggleReplyForm(id) {
+    const form = document.getElementById('rf-'+id);
+    const isOpen = form.classList.contains('open');
+    form.classList.toggle('open', !isOpen);
+    if (!isOpen) document.getElementById('ri-'+id).focus();
+  }
+  function sendReply(id) {
+    const val = document.getElementById('ri-'+id).value.trim();
+    if (!val) return showToast('⚠️ Tulis balasan dulu!', '#e74c3c');
+    const reviews = loadReviews();
+    const idx = reviews.findIndex(r => r.id === id);
+    if (idx > -1) { reviews[idx].reply = val; saveReviews(reviews); showToast('✅ Balasan terkirim!'); renderReviews(); }
+  }
+
+  // ── LEADERBOARD ──
+  function computeLeaderboard() {
+    const reviews = loadReviews();
+    const map = {};
+    reviews.forEach(r => {
+      if (!r.driver) return;
+      if (!map[r.driver]) map[r.driver] = { total:0, sum:0 };
+      map[r.driver].total++;
+      map[r.driver].sum += r.bintang;
+    });
+    return Object.entries(map)
+      .map(([name, d]) => ({ name, total:d.total, avg:d.sum/d.total }))
+      .sort((a,b) => b.avg - a.avg || b.total - a.total);
+  }
+  function renderLeaderboard() {
+    const data = computeLeaderboard();
+    const el   = document.getElementById('leaderboard-content');
+    if (data.length === 0) {
+      el.innerHTML = `<div class="empty-state"><div class="icon">🏆</div><p>Belum ada data rating.</p></div>`;
+      return;
+    }
+    const podiumColors  = ['#f5a623','#aaaaaa','#cd7f32'];
+    const podiumSizes   = [76, 60, 50];
+    const podiumHeights = [96, 76, 58];
+    const podiumFonts   = [24, 20, 16];
+    const medals        = ['🥇','🥈','🥉'];
+    const top3  = data.slice(0,3);
+    const order = top3.length === 1 ? [0] : top3.length === 2 ? [1,0] : [1,0,2];
+    let podiumHtml = `<div class="leaderboard-podium">`;
+    order.forEach(rank => {
+      const d = top3[rank];
+      if (!d) return;
+      podiumHtml += `
+        <div class="podium-item">
+          <div class="podium-avatar-wrap">
+            ${rank===0 ? `<div class="podium-crown">👑</div>` : ''}
+            <div class="podium-avatar-inner" style="width:${podiumSizes[rank]}px;height:${podiumSizes[rank]}px;font-size:${podiumFonts[rank]}px;background:${getAvatarColor(d.name)};">
+              ${getInitials(d.name)}
+            </div>
+          </div>
+          <div class="podium-name">${escHtml(d.name)}</div>
+          <div class="podium-stars">⭐ ${d.avg.toFixed(1)}</div>
+          <div class="podium-count">${d.total} rating</div>
+          <div class="podium-block" style="height:${podiumHeights[rank]}px;background:${podiumColors[rank]}30;border:1px solid ${podiumColors[rank]}50;">${medals[rank]}</div>
+        </div>`;
+    });
+    podiumHtml += `</div>`;
+    let listHtml = `<div class="lb-list">`;
+    data.forEach((d, i) => {
+      const rc = i===0?'gold':i===1?'silver':i===2?'bronze':'';
+      listHtml += `
+        <div class="lb-row" style="animation-delay:${i*0.05}s">
+          <div class="lb-rank ${rc}">${i<3?medals[i]:i+1}</div>
+          ${avatarHtml(d.name, 36, 13)}
+          <div class="lb-info">
+            <div class="lb-name">${escHtml(d.name)}</div>
+            <div class="lb-sub">${d.total} rating diterima</div>
+          </div>
+          <div class="lb-score">
+            <div class="lb-avg">${d.avg.toFixed(1)} ⭐</div>
+            <div class="lb-total">rata-rata</div>
+          </div>
+        </div>`;
+    });
+    listHtml += `</div>`;
+    el.innerHTML = podiumHtml + listHtml;
+  }
+
+  // ── STATS ──
+  function updateStats(reviews) {
+    const total   = reviews.length;
+    const avg     = total ? (reviews.reduce((s,r) => s+r.bintang,0)/total).toFixed(1) : '—';
+    const drivers = loadDrivers('Mandalika').length + loadDrivers('Nexotis').length;
+    document.getElementById('stat-total').textContent   = total;
+    document.getElementById('stat-avg').textContent     = avg==='—' ? '—' : avg+' ⭐';
+    document.getElementById('stat-drivers').textContent = drivers;
+  }
+
+  // ── UTILS ──
+  function escHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function showToast(msg, color) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.background = color || '#2ecc71';
+    t.style.color = color ? '#fff' : '#000';
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  // ── PANEL DRIVER DROPDOWN ──
+  function renderPanelDriverDropdown(server, listId, csId, hiddenId) {
+    const drivers = loadDrivers(server);
+    const listEl  = document.getElementById(listId);
+    if (!listEl) return;
+    if (!drivers.length) {
+      listEl.innerHTML = '<div class="cs-empty">Belum ada driver. Minta admin tambahkan.</div>';
+      return;
+    }
+    listEl.innerHTML = drivers.map(d => `
+      <div class="cs-option" data-value="${escHtml(d)}"
+        onclick="event.stopPropagation(); selectPanelOption('${csId}','${hiddenId}','${escHtml(d)}')">
+        ${avatarHtml(d, 30, 11)}
+        <div style="flex:1">
+          <div class="cs-opt-label">${escHtml(d)}</div>
+          <div class="cs-opt-sub">Driver Opang</div>
+        </div>
+        <span class="cs-check">✓</span>
+      </div>
+    `).join('');
+  }
+
+  function selectPanelOption(csId, hiddenId, value) {
+    const el    = document.getElementById(csId);
+    const valEl = el.querySelector('.cs-value');
+    document.getElementById(hiddenId).value = value;
+    el.querySelectorAll('.cs-option').forEach(o => o.classList.toggle('selected', o.dataset.value === value));
+    const color = getAvatarColor(value);
+    valEl.innerHTML = `<div class="avatar cs-selected-avatar" style="width:26px;height:26px;font-size:10px;background:${color};">${getInitials(value)}</div><span>${escHtml(value)}</span>`;
+    valEl.classList.remove('placeholder');
+    el.classList.remove('open');
+  }
+
+  function refreshAllDropdowns() {
+    renderPanelDriverDropdown('Mandalika', 'cs-driver-mk-list', 'cs-driver-mk', 'input-driver-mk');
+    renderPanelDriverDropdown('Nexotis',   'cs-driver-nx-list', 'cs-driver-nx', 'input-driver-nx');
+  }
+
+  // ── CUSTOM SELECT ──
+  function toggleSelect(id) {
+    const el = document.getElementById(id);
+    const wasOpen = el.classList.contains('open');
+    document.querySelectorAll('.custom-select.open').forEach(s => s.classList.remove('open'));
+    if (!wasOpen) el.classList.add('open');
+  }
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.custom-select')) {
+      document.querySelectorAll('.custom-select.open').forEach(s => s.classList.remove('open'));
+    }
+  });
+
+  // ── ADMIN DRIVER MANAGEMENT ──
+  let activeDriverTab = 'mk';
+
+  function switchDriverTab(tab) {
+    activeDriverTab = tab;
+    document.getElementById('dpanel-mk').style.display = tab === 'mk' ? 'block' : 'none';
+    document.getElementById('dpanel-nx').style.display = tab === 'nx' ? 'block' : 'none';
+    const btnMk = document.getElementById('dtab-mk');
+    const btnNx = document.getElementById('dtab-nx');
+    if (tab === 'mk') {
+      btnMk.style.background = '#1a4a1a'; btnMk.style.color = 'var(--mk-green)';
+      btnNx.style.background = 'transparent'; btnNx.style.color = 'var(--muted)';
+    } else {
+      btnNx.style.background = '#3d0e2c'; btnNx.style.color = 'var(--nx-pink)';
+      btnMk.style.background = 'transparent'; btnMk.style.color = 'var(--muted)';
+    }
+    renderDriverListAdmin(tab);
+  }
+
+  function addDriver(tab) {
+    const server  = tab === 'mk' ? 'Mandalika' : 'Nexotis';
+    const inputId = 'input-new-driver-' + tab;
+    const val     = document.getElementById(inputId).value.trim();
+    if (!val) return showToast('⚠️ Nama driver wajib diisi!', '#e74c3c');
+    const drivers = loadDrivers(server);
+    if (drivers.includes(val)) return showToast('⚠️ Nama driver sudah ada!', '#e74c3c');
+    drivers.push(val);
+    saveDrivers(server, drivers);
+    document.getElementById(inputId).value = '';
+    refreshAllDropdowns();
+    renderDriverListAdmin(tab);
+    updateStats(loadReviews());
+    showToast('✅ Driver berhasil ditambahkan!');
+  }
+
+  function removeDriver(tab, idx) {
+    const server  = tab === 'mk' ? 'Mandalika' : 'Nexotis';
+    const drivers = loadDrivers(server);
+    drivers.splice(idx, 1);
+    saveDrivers(server, drivers);
+    refreshAllDropdowns();
+    renderDriverListAdmin(tab);
+    updateStats(loadReviews());
+    showToast('🗑️ Driver berhasil dihapus!');
+  }
+
+  function renderDriverListAdmin(tab) {
+    const server    = tab === 'mk' ? 'Mandalika' : 'Nexotis';
+    const drivers   = loadDrivers(server);
+    const container = document.getElementById('driver-list-' + tab);
+    if (!container) return;
+    if (!drivers.length) {
+      container.innerHTML = `<div style="font-size:13px;color:var(--muted);padding:8px 0;font-weight:700;">Belum ada driver ${server}.</div>`;
+      return;
+    }
+    container.innerHTML = drivers.map((d, i) => `
+      <div style="display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 14px;">
+        ${avatarHtml(d, 32, 12)}
+        <span style="font-size:14px;font-weight:700;flex:1;">${escHtml(d)}</span>
+        <button onclick="removeDriver('${tab}',${i})" style="padding:4px 12px;background:transparent;border:1px solid rgba(231,76,60,0.35);border-radius:6px;color:#e74c3c;font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;cursor:pointer;">Hapus</button>
+      </div>
+    `).join('');
+  }
+
+  function toggleDriverPanel() {
+    const panel  = document.getElementById('driver-panel');
+    const isOpen = panel.style.display !== 'none';
+    panel.style.display = isOpen ? 'none' : 'block';
+    if (!isOpen) { switchDriverTab('mk'); }
+  }
+
+  // ── ADMIN AUTH ──
+  const ADMIN_PASS = 'faridmukti73';
+  let isAdminLoggedIn = false;
+  let pendingDeleteId = null;
+
+  function toggleAdminLogin() {
+    if (isAdminLoggedIn) return;
+    const bar = document.getElementById('admin-login-bar');
+    bar.style.display = bar.style.display === 'none' ? 'block' : 'none';
+    if (bar.style.display === 'block') setTimeout(() => document.getElementById('admin-login-input').focus(), 100);
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.altKey && e.code === 'Numpad1') { e.preventDefault(); if (!isAdminLoggedIn) toggleAdminLogin(); }
+  });
+
+  function doAdminLogin() {
+    const val = document.getElementById('admin-login-input').value;
+    if (val !== ADMIN_PASS) {
+      showToast('❌ Password salah!', '#e74c3c');
+      document.getElementById('admin-login-input').value = '';
+      return;
+    }
+    isAdminLoggedIn = true;
+    document.getElementById('admin-login-bar').style.display  = 'none';
+    document.getElementById('admin-logged-bar').style.display = 'block';
+    showToast('✅ Mode admin aktif!');
+    renderReviews();
+  }
+
+  function doAdminLogout() {
+    isAdminLoggedIn = false;
+    document.getElementById('admin-logged-bar').style.display = 'none';
+    document.getElementById('driver-panel').style.display     = 'none';
+    showToast('👋 Keluar dari mode admin');
+    renderReviews();
+  }
+
+  function deleteReview(id) {
+    if (!isAdminLoggedIn) return;
+    pendingDeleteId = id;
+    document.getElementById('modal-overlay').classList.add('open');
+  }
+  function closeModal() {
+    pendingDeleteId = null;
+    document.getElementById('modal-overlay').classList.remove('open');
+  }
+  function confirmDelete() {
+    saveReviews(loadReviews().filter(r => r.id !== pendingDeleteId));
+    closeModal();
+    showToast('🗑️ Rating berhasil dihapus!');
+    renderReviews();
+  }
+  document.getElementById('modal-overlay').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+
+  // ── INIT ──
+  refreshAllDropdowns();
+  updateStats(loadReviews());
+</script>
+</body>
+</html>
