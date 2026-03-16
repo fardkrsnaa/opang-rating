@@ -983,7 +983,13 @@
     const cur = _cache.drivers ? { ..._cache.drivers } : { Mandalika: [], Nexotis: [] };
     cur[server] = d;
     setCache('drivers', cur);
-    jbSet(BIN_DRIVERS, cur).catch(e => console.error('saveDrivers:', e));
+    // Driver data WAJIB await - tidak boleh background karena data penting
+    try { await jbSet(BIN_DRIVERS, cur); }
+    catch(e) {
+      console.error('saveDrivers error:', e);
+      showToast('❌ Gagal menyimpan driver, coba lagi!', '#e74c3c');
+      invalidateCache('drivers'); // invalidate cache kalau gagal
+    }
   }
   function _normalizeLocks(data) {
     if (!data || Array.isArray(data) || typeof data !== 'object') return { mk: false, nx: false };
@@ -1361,13 +1367,14 @@
     const inputId = 'input-new-driver-' + tab;
     const val     = document.getElementById(inputId).value.trim();
     if (!val) return showToast('⚠️ Nama driver wajib diisi!', '#e74c3c');
-    // Optimistic: ambil dari cache, langsung update UI
+    // Selalu fetch fresh dari server untuk driver agar tidak ada data lama
     invalidateCache('drivers');
     const drivers = await loadDrivers(server);
     if (drivers.includes(val)) return showToast('⚠️ Nama driver sudah ada!', '#e74c3c');
     drivers.push(val);
     document.getElementById(inputId).value = '';
-    saveDrivers(server, drivers); // background, tidak perlu await
+    showToast('⏳ Menyimpan driver...', '#1d6fa4');
+    await saveDrivers(server, drivers); // WAJIB await - jangan background
     await refreshAllDropdowns();
     await renderDriverListAdmin(tab);
     updateStats(null);
@@ -1379,7 +1386,8 @@
     invalidateCache('drivers');
     const drivers = await loadDrivers(server);
     drivers.splice(idx, 1);
-    saveDrivers(server, drivers); // background
+    showToast('⏳ Menghapus driver...', '#1d6fa4');
+    await saveDrivers(server, drivers); // WAJIB await
     await refreshAllDropdowns();
     await renderDriverListAdmin(tab);
     updateStats(null);
@@ -1474,30 +1482,27 @@
   });
 
   // ── PANEL LOCK ──
-  async function applyLocks() {
-    const locks = await loadLocks();
+  function applyLocksFromCache(locks) {
     const bothLocked = locks['mk'] && locks['nx'];
-
     ['mk', 'nx'].forEach(panel => {
-      const overlay  = document.getElementById('lock-' + panel);
-      const titleEl  = overlay ? overlay.querySelector('.lock-title') : null;
-      const iconEl   = overlay ? overlay.querySelector('.lock-icon') : null;
-      const subEl    = overlay ? overlay.querySelector('.lock-sub') : null;
-      const btn      = document.getElementById('btn-lock-' + panel);
-      const server   = panel === 'mk' ? 'Mandalika' : 'Nexotis';
-      const other    = panel === 'mk' ? 'Nexotis' : 'Mandalika';
+      const overlay = document.getElementById('lock-' + panel);
+      const titleEl = overlay ? overlay.querySelector('.lock-title') : null;
+      const iconEl  = overlay ? overlay.querySelector('.lock-icon')  : null;
+      const subEl   = overlay ? overlay.querySelector('.lock-sub')   : null;
+      const btn     = document.getElementById('btn-lock-' + panel);
+      const server  = panel === 'mk' ? 'Mandalika' : 'Nexotis';
+      const other   = panel === 'mk' ? 'Nexotis'   : 'Mandalika';
       if (!overlay) return;
-
       if (locks[panel]) {
         overlay.classList.add('visible');
         if (bothLocked) {
-          if (iconEl)  iconEl.textContent  = '😴';
-          if (titleEl) titleEl.innerHTML   = 'Driver Tidak Lagi<br>Di Kota, Lagi Istirahat';
-          if (subEl)   subEl.textContent   = 'Coba lagi nanti';
+          if (iconEl)  iconEl.textContent = '😴';
+          if (titleEl) titleEl.innerHTML  = 'Driver Tidak Lagi<br>Di Kota, Lagi Istirahat';
+          if (subEl)   subEl.textContent  = 'Coba lagi nanti';
         } else {
-          if (iconEl)  iconEl.textContent  = '🔒';
-          if (titleEl) titleEl.innerHTML   = 'Driver Sedang Di<br>Kota ' + other;
-          if (subEl)   subEl.textContent   = 'Coba lagi nanti';
+          if (iconEl)  iconEl.textContent = '🔒';
+          if (titleEl) titleEl.innerHTML  = 'Driver Sedang Di<br>Kota ' + other;
+          if (subEl)   subEl.textContent  = 'Coba lagi nanti';
         }
         if (btn) { btn.textContent = '🔒 ' + server; btn.style.opacity = '0.7'; }
       } else {
@@ -1507,14 +1512,18 @@
     });
   }
 
+  async function applyLocks() {
+    const locks = await loadLocks();
+    applyLocksFromCache(locks);
+  }
+
   async function togglePanelLock(panel) {
-    // Optimistic: langsung update cache dan UI
-    invalidateCache('locks');
+    // Ambil locks dari cache/server, toggle, update cache + UI langsung
     const locks = await loadLocks();
     locks[panel] = !locks[panel];
-    setCache('locks', locks);
-    saveLocks(locks); // background
-    applyLocks(); // tidak perlu await karena sudah pakai cache
+    setCache('locks', locks);  // update cache dulu
+    saveLocks(locks);          // simpan ke server di background
+    applyLocksFromCache(locks); // langsung apply pakai object yang sudah ditoggle
     const server = panel === 'mk' ? 'Mandalika' : 'Nexotis';
     showToast(locks[panel] ? '🔒 ' + server + ' dikunci!' : '🔓 ' + server + ' dibuka!');
   }
